@@ -48,6 +48,8 @@ var (
 // which is specified by the given address. All packets will encrypted with
 // AES-GCM using the given key. The length of the key's byte-slice, can be 16, 24
 // or 32 and will define if AES-128, AES-192 or AES-256 is used.
+// For testing purposes, a 10-byte long id can be set using the 4th argument. If
+// no id is specified, a random id will be generated.
 func NewMulticast(parent Fader, address string, key []byte, ids ...[]byte) Fader {
 	return &multicast{
 		parent:  parent,

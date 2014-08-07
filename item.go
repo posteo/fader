@@ -18,6 +18,9 @@ import (
 	"time"
 )
 
+// This interface has to be implemented by any item that should be handled by
+// the fader. The Key() function should return a string that identified the item.
+// The provided Time() will help the fader to schedule the expiry of the item.
 type Item interface {
 	Key() string
 	Time() time.Time
