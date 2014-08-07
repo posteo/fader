@@ -2,7 +2,7 @@
 
 In-Memory storage that distributes items via UDP multicast.
 
-[http://godoc.org/github.com/posteo/fader]
+Documentation is available at http://godoc.org/github.com/posteo/fader:"godoc.org"
 
 ## Interface
 
