@@ -22,12 +22,13 @@ import (
 	"github.com/juju/errgo"
 	"github.com/simia-tech/gol"
 
-	"github.com/posteo/fader/crypt"
 	"code.posteo.de/shared/util"
+	"github.com/posteo/fader/crypt"
 )
 
 const (
-	idSize                 = 10
+	IDSize = 10
+
 	maximalWriteBufferSize = 512
 )
 
@@ -45,7 +46,7 @@ var (
 )
 
 func newMulticastTransmitter(writer crypt.Writer, reader crypt.Reader, ids ...[]byte) *multicastTransmitter {
-	id := util.RandomBytes(idSize)
+	id := util.RandomBytes(IDSize)
 	if len(ids) > 0 {
 		copy(id, ids[0])
 	}
@@ -80,7 +81,7 @@ func (t *multicastTransmitter) Flush() error {
 }
 
 func (t *multicastTransmitter) Read(payload []byte) (int, error) {
-	buffer := make([]byte, idSize+len(payload))
+	buffer := make([]byte, IDSize+len(payload))
 
 	nonce := big.NewInt(0)
 	for {
@@ -88,7 +89,7 @@ func (t *multicastTransmitter) Read(payload []byte) (int, error) {
 			return 0, errgo.Mask(err)
 		}
 
-		id := buffer[:idSize]
+		id := buffer[:IDSize]
 		if bytes.Equal(t.id, id) {
 			continue
 		}
@@ -101,7 +102,7 @@ func (t *multicastTransmitter) Read(payload []byte) (int, error) {
 		break
 	}
 
-	copy(payload, buffer[idSize:])
+	copy(payload, buffer[IDSize:])
 	return len(payload), nil
 }
 
