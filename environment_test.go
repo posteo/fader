@@ -16,13 +16,13 @@ package fader_test
 
 import (
 	"encoding/hex"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/simia-tech/gol"
 
 	. "github.com/posteo/fader"
-	"reflect"
 )
 
 type environment struct {

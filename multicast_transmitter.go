@@ -16,13 +16,13 @@ package fader
 
 import (
 	"bytes"
+	"crypto/rand"
 	"expvar"
 	"math/big"
 
 	"github.com/juju/errgo"
 	"github.com/simia-tech/gol"
 
-	"code.posteo.de/shared/util"
 	"github.com/posteo/fader/crypt"
 )
 
@@ -46,7 +46,7 @@ var (
 )
 
 func newMulticastTransmitter(writer crypt.Writer, reader crypt.Reader, ids ...[]byte) *multicastTransmitter {
-	id := util.RandomBytes(IDSize)
+	id := randomBytes(IDSize)
 	if len(ids) > 0 {
 		copy(id, ids[0])
 	}
@@ -124,4 +124,12 @@ func (t *multicastTransmitter) validNonce(id []byte, nonce *big.Int) bool {
 		t.foreignNonces[string(id)] = nonce
 	}
 	return true
+}
+
+func randomBytes(count int) []byte {
+	result := make([]byte, count)
+	if _, err := rand.Read(result); err != nil {
+		panic(err)
+	}
+	return result
 }
