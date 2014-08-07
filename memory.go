@@ -16,7 +16,6 @@ package fader
 
 import (
 	"container/heap"
-	"expvar"
 	"time"
 
 	"github.com/juju/errgo"
@@ -32,7 +31,6 @@ type memory struct {
 
 var (
 	veryLongDuration time.Duration
-	metricItems      = expvar.NewInt("gauge:fader.memory.items")
 )
 
 func init() {
@@ -66,7 +64,6 @@ func (m *memory) Close() error {
 func (m *memory) Store(item Item) error {
 	heap.Push(m.items, item)
 	m.itemStored <- true
-	metricItems.Add(1)
 	return nil
 }
 
@@ -103,7 +100,6 @@ func (m *memory) Size() int {
 
 func (m *memory) removeEarliest() (Item, error) {
 	if m.Size() > 0 {
-		metricItems.Add(-1)
 		return heap.Pop(m.items).(Item), nil
 	} else {
 		return nil, nil

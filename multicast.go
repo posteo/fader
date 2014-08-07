@@ -16,7 +16,6 @@ package fader
 
 import (
 	"encoding/gob"
-	"expvar"
 	"net"
 	"strings"
 
@@ -38,9 +37,6 @@ type multicast struct {
 
 var (
 	DefaultKey = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-
-	metricSentItems     = expvar.NewInt("event:fader.multicast.sent")
-	metricReceivedItems = expvar.NewInt("event:fader.multicast.received")
 )
 
 // Creates a Fader instance that delegates all calls to a parent Fader instance.
@@ -138,8 +134,6 @@ func (m *multicast) send(item Item) error {
 		return errgo.Mask(err)
 	}
 
-	metricSentItems.Add(1)
-
 	return nil
 }
 
@@ -154,8 +148,6 @@ func (m *multicast) receiveLoop() {
 			gol.Handle(errgo.Mask(err))
 			continue
 		}
-
-		metricReceivedItems.Add(1)
 
 		if err := m.parent.Store(item); err != nil {
 			gol.Handle(errgo.Mask(err))
