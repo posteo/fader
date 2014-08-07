@@ -2,7 +2,7 @@
 
 In-Memory storage that distributes items via UDP multicast.
 
-Documentation is available at http://godoc.org/github.com/posteo/fader:"godoc.org"
+Documentation is available at [godoc.org](http://godoc.org/github.com/posteo/fader)
 
 ## Interface
 
@@ -70,4 +70,3 @@ multicastFaderTwo.Size() // => 1
 ## Contribution
 
 Any contribution is welcome! Feel free to open an issue or do a pull request.
-    
