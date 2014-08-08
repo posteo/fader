@@ -29,7 +29,7 @@ type multicast struct {
 	parent             Fader
 	address            string
 	key                []byte
-	ids                [][]byte
+	id                 []byte
 	incomingConnection *net.UDPConn
 	outgoingConnection *net.UDPConn
 	transmitter        *multicastTransmitter
@@ -45,13 +45,13 @@ var (
 // AES-GCM using the given key. The length of the key's byte-slice, can be 16, 24
 // or 32 and will define if AES-128, AES-192 or AES-256 is used.
 // For testing purposes, a 10-byte long id can be set using the 4th argument. If
-// no id is specified, a random id will be generated.
-func NewMulticast(parent Fader, address string, key []byte, ids ...[]byte) Fader {
+// no id is nil, a random id will be generated.
+func NewMulticast(parent Fader, address string, key []byte, id []byte) Fader {
 	return &multicast{
 		parent:  parent,
 		address: address,
 		key:     key,
-		ids:     ids,
+		id:      id,
 	}
 }
 
@@ -81,7 +81,7 @@ func (m *multicast) Open() error {
 		return errgo.Mask(err)
 	}
 
-	m.transmitter = newMulticastTransmitter(encrypter, decrypter, m.ids...)
+	m.transmitter = newMulticastTransmitter(encrypter, decrypter, m.id)
 
 	go m.receiveLoop()
 

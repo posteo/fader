@@ -45,10 +45,9 @@ var (
 	metricDroppedPackets = expvar.NewInt("event:fader.multicast.dropped")
 )
 
-func newMulticastTransmitter(writer crypt.Writer, reader crypt.Reader, ids ...[]byte) *multicastTransmitter {
-	id := randomBytes(IDSize)
-	if len(ids) > 0 {
-		copy(id, ids[0])
+func newMulticastTransmitter(writer crypt.Writer, reader crypt.Reader, id []byte) *multicastTransmitter {
+	if id == nil || len(id) != 10 {
+		id = randomBytes(IDSize)
 	}
 	return &multicastTransmitter{
 		writer:        writer,
