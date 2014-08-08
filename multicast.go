@@ -26,13 +26,14 @@ import (
 )
 
 type multicast struct {
-	parent             Fader
-	address            string
-	key                []byte
-	id                 []byte
-	incomingConnection *net.UDPConn
-	outgoingConnection *net.UDPConn
-	transmitter        *multicastTransmitter
+	parent              Fader
+	address             string
+	key                 []byte
+	id                  []byte
+	itemReceivedHandler func(Item) bool
+	incomingConnection  *net.UDPConn
+	outgoingConnection  *net.UDPConn
+	transmitter         *multicastTransmitter
 }
 
 var (
@@ -44,14 +45,24 @@ var (
 // which is specified by the given address. All packets will encrypted with
 // AES-GCM using the given key. The length of the key's byte-slice, can be 16, 24
 // or 32 and will define if AES-128, AES-192 or AES-256 is used.
-// For testing purposes, a 10-byte long id can be set using the 4th argument. If
-// no id is nil, a random id will be generated.
-func NewMulticast(parent Fader, address string, key []byte, id []byte) Fader {
+// For testing purposes, a 10-byte long id can be set. If no id is nil, a random
+// id will be generated.
+// The argument can take a function that is called every time an item is received.
+// If the function is nil or returns true, the received item will be stored in
+// the parent fader. Otherwise, the item will be dismissed.
+func NewMulticast(
+	parent Fader,
+	address string,
+	key []byte,
+	id []byte,
+	itemReceivedHandler func(Item) bool,
+) Fader {
 	return &multicast{
-		parent:  parent,
-		address: address,
-		key:     key,
-		id:      id,
+		parent:              parent,
+		address:             address,
+		key:                 key,
+		id:                  id,
+		itemReceivedHandler: itemReceivedHandler,
 	}
 }
 
@@ -146,6 +157,10 @@ func (m *multicast) receiveLoop() {
 				return
 			}
 			gol.Handle(errgo.Mask(err))
+			continue
+		}
+
+		if m.itemReceivedHandler != nil && !m.itemReceivedHandler(item) {
 			continue
 		}
 
