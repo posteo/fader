@@ -130,13 +130,9 @@ expiryLoop:
 				break expiryLoop
 			}
 		case <-time.After(durationTillNextExpiry):
-			item, err := m.removeEarliest()
-			if err != nil {
+			if _, err := m.removeEarliest(); err != nil {
 				gol.Handle(errgo.Mask(err))
 				break expiryLoop
-			}
-			if item != nil {
-				gol.Debug("item expired")
 			}
 
 			durationTillNextExpiry, err = m.findNextDurationTillNextExpiry()

@@ -96,7 +96,7 @@ func TestIfTransmissionFailsOnAReplyAttack(t *testing.T) {
 	e.assertNoError(memoryFader.Open())
 	defer memoryFader.Close()
 
-	multicastFader := NewMulticast(memoryFader, "224.0.0.1:1888", e.key, e.multicastFaderIDOne)
+	multicastFader := NewMulticast(memoryFader, "224.0.0.1:1888", e.key, e.multicastFaderIDOne, nil)
 	e.assertNoError(multicastFader.Open())
 	defer multicastFader.Close()
 

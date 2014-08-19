@@ -59,11 +59,11 @@ func setUp(tb testing.TB) *environment {
 	e.multicastFaderIDOne = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	e.multicastFaderIDTwo = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 
-	e.multicastFaderOne = NewMulticast(e.memoryFaderOne, "224.0.0.1:1888", e.key, e.multicastFaderIDOne)
+	e.multicastFaderOne = NewMulticast(e.memoryFaderOne, "224.0.0.1:1888", e.key, e.multicastFaderIDOne, nil)
 	e.assertNoError(
 		e.multicastFaderOne.Open())
 
-	e.multicastFaderTwo = NewMulticast(e.memoryFaderTwo, "224.0.0.1:1888", e.key, e.multicastFaderIDTwo)
+	e.multicastFaderTwo = NewMulticast(e.memoryFaderTwo, "224.0.0.1:1888", e.key, e.multicastFaderIDTwo, nil)
 	e.assertNoError(
 		e.multicastFaderTwo.Open())
 
