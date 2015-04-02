@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This package provides an interface to store and fetch items. The implementation
+// Package fader provides an interface to store and fetch items. The implementation
 // is responsible for the removal after a expiry period.
 //
 // Example for a memory fader, that expires items after 2 seconds
@@ -47,6 +47,7 @@
 //    multicastFaderTwo.Size() // => 1
 package fader
 
+// Fader defines the fader interface.
 type Fader interface {
 	Open() error
 	Close() error
@@ -56,4 +57,5 @@ type Fader interface {
 	Select(string) []Item
 	Detect(string) Item
 	Size() int
+	Clear()
 }

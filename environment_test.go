@@ -20,8 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/simia-tech/gol"
-
 	. "github.com/posteo/fader"
 )
 
@@ -35,10 +33,6 @@ type environment struct {
 	multicastFaderIDTwo []byte
 	multicastFaderOne   Fader
 	multicastFaderTwo   Fader
-}
-
-func init() {
-	gol.Initialize(&gol.Configuration{Backend: "console", Mask: "all"})
 }
 
 func setUp(tb testing.TB) *environment {

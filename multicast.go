@@ -16,11 +16,11 @@ package fader
 
 import (
 	"encoding/gob"
+	"log"
 	"net"
 	"strings"
 
 	"github.com/juju/errgo"
-	"github.com/simia-tech/gol"
 
 	"github.com/posteo/fader/crypt"
 )
@@ -36,11 +36,7 @@ type multicast struct {
 	transmitter         *multicastTransmitter
 }
 
-var (
-	DefaultKey = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-)
-
-// Creates a Fader instance that delegates all calls to a parent Fader instance.
+// NewMulticast creates a Fader instance that delegates all calls to a parent Fader instance.
 // Additional to that, all store-operations are published to a multicast group
 // which is specified by the given address. All packets will encrypted with
 // AES-GCM using the given key. The length of the key's byte-slice, can be 16, 24
@@ -67,6 +63,10 @@ func NewMulticast(
 }
 
 func (m *multicast) Open() error {
+	if length := len(m.key); length != 16 && length != 24 && length != 32 {
+		return errgo.Newf("key must have a length of 16, 24 or 32")
+	}
+
 	udpAddress, err := net.ResolveUDPAddr("udp", m.address)
 	if err != nil {
 		return errgo.Mask(err)
@@ -95,8 +95,6 @@ func (m *multicast) Open() error {
 	m.transmitter = newMulticastTransmitter(encrypter, decrypter, m.id)
 
 	go m.receiveLoop()
-
-	gol.Info("joined multicast group at %s with id %x", m.address, m.transmitter.id)
 
 	return nil
 }
@@ -134,6 +132,10 @@ func (m *multicast) Size() int {
 	return m.parent.Size()
 }
 
+func (m *multicast) Clear() {
+	m.parent.Clear()
+}
+
 func (m *multicast) send(item Item) error {
 	encoder := gob.NewEncoder(m.transmitter)
 
@@ -156,7 +158,7 @@ func (m *multicast) receiveLoop() {
 			if strings.Contains(err.Error(), "use of closed network connection") {
 				return
 			}
-			gol.Handle(errgo.Mask(err))
+			log.Printf("error during message decoding: %s", errgo.Details(err))
 			continue
 		}
 
@@ -165,7 +167,7 @@ func (m *multicast) receiveLoop() {
 		}
 
 		if err := m.parent.Store(item); err != nil {
-			gol.Handle(errgo.Mask(err))
+			log.Printf("error during message storing: %s", errgo.Details(err))
 			return
 		}
 	}

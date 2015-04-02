@@ -17,9 +17,6 @@ package fader
 import (
 	"container/heap"
 	"time"
-
-	"github.com/juju/errgo"
-	"github.com/simia-tech/gol"
 )
 
 type memory struct {
@@ -37,7 +34,7 @@ func init() {
 	veryLongDuration, _ = time.ParseDuration("24h")
 }
 
-// Creates a Fader instance that stores all data in the memory. The expiresIn
+// NewMemory creates a Fader instance that stores all data in the memory. The expiresIn
 // parameter defines after which period a stored item will be removed.
 func NewMemory(expiresIn time.Duration) Fader {
 	return &memory{
@@ -70,13 +67,12 @@ func (m *memory) Store(item Item) error {
 func (m *memory) Earliest() Item {
 	if m.Size() > 0 {
 		return (*m.items)[0]
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func (m *memory) Select(key string) []Item {
-	result := make([]Item, 0)
+	var result []Item
 	for _, item := range *m.items {
 		if item.Key() == key {
 			result = append(result, item)
@@ -98,12 +94,18 @@ func (m *memory) Size() int {
 	return m.items.Len()
 }
 
-func (m *memory) removeEarliest() (Item, error) {
+func (m *memory) Clear() {
+	m.closed <- true
+	m.items = &itemHeap{}
+	heap.Init(m.items)
+	go m.expiryLoop()
+}
+
+func (m *memory) removeEarliest() Item {
 	if m.Size() > 0 {
-		return heap.Pop(m.items).(Item), nil
-	} else {
-		return nil, nil
+		return heap.Pop(m.items).(Item)
 	}
+	return nil
 }
 
 // This function should run in it's own goroutine. It runs in an infinite loop
@@ -118,35 +120,22 @@ func (m *memory) removeEarliest() (Item, error) {
 // for an item to be stored.
 func (m *memory) expiryLoop() {
 	durationTillNextExpiry := veryLongDuration
-	err := error(nil)
 
 expiryLoop:
 	for {
 		select {
 		case <-m.itemStored:
-			durationTillNextExpiry, err = m.findNextDurationTillNextExpiry()
-			if err != nil {
-				gol.Handle(errgo.Mask(err))
-				break expiryLoop
-			}
+			durationTillNextExpiry = m.findNextDurationTillNextExpiry()
 		case <-time.After(durationTillNextExpiry):
-			if _, err := m.removeEarliest(); err != nil {
-				gol.Handle(errgo.Mask(err))
-				break expiryLoop
-			}
-
-			durationTillNextExpiry, err = m.findNextDurationTillNextExpiry()
-			if err != nil {
-				gol.Handle(errgo.Mask(err))
-				break expiryLoop
-			}
+			m.removeEarliest()
+			durationTillNextExpiry = m.findNextDurationTillNextExpiry()
 		case <-m.closed:
 			break expiryLoop
 		}
 	}
 }
 
-func (m *memory) findNextDurationTillNextExpiry() (time.Duration, error) {
+func (m *memory) findNextDurationTillNextExpiry() time.Duration {
 	result := veryLongDuration
 
 	for item := m.Earliest(); item != nil; item = m.Earliest() {
@@ -156,10 +145,8 @@ func (m *memory) findNextDurationTillNextExpiry() (time.Duration, error) {
 			break
 		}
 
-		if _, err := m.removeEarliest(); err != nil {
-			return 0, errgo.Mask(err)
-		}
+		m.removeEarliest()
 	}
 
-	return result, nil
+	return result
 }
