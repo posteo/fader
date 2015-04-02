@@ -57,5 +57,4 @@ type Fader interface {
 	Select(string) []Item
 	Detect(string) Item
 	Size() int
-	Clear()
 }

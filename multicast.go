@@ -132,10 +132,6 @@ func (m *multicast) Size() int {
 	return m.parent.Size()
 }
 
-func (m *multicast) Clear() {
-	m.parent.Clear()
-}
-
 func (m *multicast) send(item Item) error {
 	encoder := gob.NewEncoder(m.transmitter)
 

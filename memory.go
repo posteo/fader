@@ -94,13 +94,6 @@ func (m *memory) Size() int {
 	return m.items.Len()
 }
 
-func (m *memory) Clear() {
-	m.closed <- true
-	m.items = &itemHeap{}
-	heap.Init(m.items)
-	go m.expiryLoop()
-}
-
 func (m *memory) removeEarliest() Item {
 	if m.Size() > 0 {
 		return heap.Pop(m.items).(Item)

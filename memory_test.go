@@ -58,19 +58,6 @@ func TestSelect(t *testing.T) {
 	e.assertEquals(itemOne, items[0])
 }
 
-func TestClear(t *testing.T) {
-	e := setUp(t)
-
-	e.memoryFaderOne.Store(&item{KeyField: "one", TimeField: time.Now()})
-	e.assertEquals(1, e.memoryFaderOne.Size())
-
-	e.memoryFaderOne.Clear()
-	e.assertEquals(0, e.memoryFaderOne.Size())
-
-	e.memoryFaderOne.Store(&item{KeyField: "one", TimeField: time.Now()})
-	e.assertEquals(1, e.memoryFaderOne.Size())
-}
-
 func TestExpiry(t *testing.T) {
 	e := setUp(t)
 
