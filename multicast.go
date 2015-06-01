@@ -20,7 +20,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/juju/errgo"
+	"gopkg.in/errgo.v1"
 
 	"github.com/posteo/fader/crypt"
 )

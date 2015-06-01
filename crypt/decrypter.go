@@ -22,7 +22,7 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/juju/errgo"
+	"gopkg.in/errgo.v1"
 )
 
 type decrypter struct {

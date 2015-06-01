@@ -20,8 +20,8 @@ import (
 	"expvar"
 	"math/big"
 
-	"github.com/juju/errgo"
 	"github.com/simia-tech/gol"
+	"gopkg.in/errgo.v1"
 
 	"github.com/posteo/fader/crypt"
 )
