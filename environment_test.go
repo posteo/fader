@@ -16,9 +16,10 @@ package fader_test
 
 import (
 	"encoding/hex"
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	. "github.com/posteo/fader"
 )
@@ -33,6 +34,7 @@ type environment struct {
 	multicastFaderIDTwo []byte
 	multicastFaderOne   Fader
 	multicastFaderTwo   Fader
+	tearDown            func()
 }
 
 func setUp(tb testing.TB) *environment {
@@ -41,48 +43,28 @@ func setUp(tb testing.TB) *environment {
 	e.expiresIn, _ = time.ParseDuration("50ms")
 
 	e.memoryFaderOne = NewMemory(e.expiresIn)
-	e.assertNoError(
-		e.memoryFaderOne.Open())
+	require.NoError(tb, e.memoryFaderOne.Open())
 
 	e.memoryFaderTwo = NewMemory(e.expiresIn)
-	e.assertNoError(
-		e.memoryFaderTwo.Open())
+	require.NoError(tb, e.memoryFaderTwo.Open())
 
 	e.key, _ = hex.DecodeString("ab72c77b97cb5fe9a382d9fe81ffdbed")
 
 	e.multicastFaderIDOne = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	e.multicastFaderIDTwo = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 
-	e.multicastFaderOne = NewMulticast(e.memoryFaderOne, "224.0.0.1:1888", e.key, e.multicastFaderIDOne, nil)
-	e.assertNoError(
-		e.multicastFaderOne.Open())
+	e.multicastFaderOne = NewMulticast(e.memoryFaderOne, "224.0.0.1:2000", e.key, e.multicastFaderIDOne, nil)
+	require.NoError(tb, e.multicastFaderOne.Open())
 
-	e.multicastFaderTwo = NewMulticast(e.memoryFaderTwo, "224.0.0.1:1888", e.key, e.multicastFaderIDTwo, nil)
-	e.assertNoError(
-		e.multicastFaderTwo.Open())
+	e.multicastFaderTwo = NewMulticast(e.memoryFaderTwo, "224.0.0.1:2000", e.key, e.multicastFaderIDTwo, nil)
+	require.NoError(tb, e.multicastFaderTwo.Open())
+
+	e.tearDown = func() {
+		require.NoError(tb, e.memoryFaderOne.Close())
+		require.NoError(tb, e.memoryFaderTwo.Close())
+		require.NoError(tb, e.multicastFaderOne.Close())
+		require.NoError(tb, e.multicastFaderTwo.Close())
+	}
 
 	return e
-}
-
-func (e *environment) tearDown() {
-	e.assertNoError(
-		e.memoryFaderOne.Close())
-	e.assertNoError(
-		e.memoryFaderTwo.Close())
-	e.assertNoError(
-		e.multicastFaderOne.Close())
-	e.assertNoError(
-		e.multicastFaderTwo.Close())
-}
-
-func (e *environment) assertNoError(err error) {
-	if err != nil {
-		e.tb.Errorf("expected no error, got [%v]", err)
-	}
-}
-
-func (e *environment) assertEquals(expected, actual interface{}) {
-	if !reflect.DeepEqual(expected, actual) {
-		e.tb.Errorf("expected [%v], got [%v]", expected, actual)
-	}
 }

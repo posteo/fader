@@ -17,6 +17,8 @@ package fader_test
 import (
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStorage(t *testing.T) {
@@ -25,8 +27,8 @@ func TestStorage(t *testing.T) {
 	item := &item{KeyField: "test", TimeField: time.Now()}
 	e.memoryFaderOne.Store(item)
 
-	e.assertEquals(1, e.memoryFaderOne.Size())
-	e.assertEquals(item, e.memoryFaderOne.Detect(item.Key()))
+	assert.Equal(t, 1, e.memoryFaderOne.Size())
+	assert.Equal(t, item, e.memoryFaderOne.Detect(item.Key()))
 }
 
 func TestSortingByTime(t *testing.T) {
@@ -41,7 +43,7 @@ func TestSortingByTime(t *testing.T) {
 	e.memoryFaderOne.Store(itemOne)
 	e.memoryFaderOne.Store(itemTwo)
 
-	e.assertEquals(itemTwo, e.memoryFaderOne.Earliest())
+	assert.Equal(t, itemTwo, e.memoryFaderOne.Earliest())
 }
 
 func TestSelect(t *testing.T) {
@@ -54,8 +56,8 @@ func TestSelect(t *testing.T) {
 	e.memoryFaderOne.Store(itemTwo)
 
 	items := e.memoryFaderOne.Select("one")
-	e.assertEquals(1, len(items))
-	e.assertEquals(itemOne, items[0])
+	assert.Equal(t, 1, len(items))
+	assert.Equal(t, itemOne, items[0])
 }
 
 func TestExpiry(t *testing.T) {
@@ -66,7 +68,7 @@ func TestExpiry(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	e.assertEquals(nil, e.memoryFaderOne.Detect(item.Key()))
+	assert.Equal(t, nil, e.memoryFaderOne.Detect(item.Key()))
 }
 
 func TestExpiryOfTwoItem(t *testing.T) {
@@ -82,11 +84,11 @@ func TestExpiryOfTwoItem(t *testing.T) {
 	e.memoryFaderOne.Store(itemTwo)
 	time.Sleep(10 * time.Millisecond)
 
-	e.assertEquals(2, e.memoryFaderOne.Size())
+	assert.Equal(t, 2, e.memoryFaderOne.Size())
 	time.Sleep(50 * time.Millisecond)
-	e.assertEquals(1, e.memoryFaderOne.Size())
+	assert.Equal(t, 1, e.memoryFaderOne.Size())
 	time.Sleep(20 * time.Millisecond)
-	e.assertEquals(0, e.memoryFaderOne.Size())
+	assert.Equal(t, 0, e.memoryFaderOne.Size())
 }
 
 func TestExpiryOfTwoItemsThatHasBeenAddedInReverseOrder(t *testing.T) {
@@ -103,14 +105,14 @@ func TestExpiryOfTwoItemsThatHasBeenAddedInReverseOrder(t *testing.T) {
 	e.memoryFaderOne.Store(itemOne)
 	time.Sleep(5 * time.Millisecond)
 
-	e.assertEquals(2, e.memoryFaderOne.Size())
-	e.assertEquals(itemOne, e.memoryFaderOne.Earliest())
+	assert.Equal(t, 2, e.memoryFaderOne.Size())
+	assert.Equal(t, itemOne, e.memoryFaderOne.Earliest())
 	time.Sleep(50 * time.Millisecond)
 
-	e.assertEquals(1, e.memoryFaderOne.Size())
-	e.assertEquals(itemTwo, e.memoryFaderOne.Earliest())
+	assert.Equal(t, 1, e.memoryFaderOne.Size())
+	assert.Equal(t, itemTwo, e.memoryFaderOne.Earliest())
 	time.Sleep(20 * time.Millisecond)
 
-	e.assertEquals(0, e.memoryFaderOne.Size())
-	e.assertEquals(nil, e.memoryFaderOne.Earliest())
+	assert.Equal(t, 0, e.memoryFaderOne.Size())
+	assert.Equal(t, nil, e.memoryFaderOne.Earliest())
 }

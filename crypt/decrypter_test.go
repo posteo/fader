@@ -20,6 +20,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	. "github.com/posteo/fader/crypt"
 )
 
@@ -29,14 +32,14 @@ func TestDecryption(t *testing.T) {
 	input, _ := hex.DecodeString("00180000000000000000000000002e3b1966d4bb71503ec7942a5f4e352735219d268cbdcda0")
 	inputBuffer := bytes.NewBuffer(input)
 	decrypter, err := NewDecrypter(inputBuffer, e.key)
-	e.assertNoError(err)
+	require.NoError(t, err)
 
 	nonce := big.NewInt(0)
 	plainText := make([]byte, 8)
 	n, err := decrypter.Read(nonce, plainText)
-	e.assertNoError(err)
-	e.assertEquals(8, n)
-	e.assertEquals([]byte{1, 2, 3, 4, 5, 6, 7, 8}, plainText)
+	require.NoError(t, err)
+	assert.Equal(t, 8, n)
+	assert.Equal(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, plainText)
 }
 
 func TestCorrectNonceReading(t *testing.T) {
@@ -45,13 +48,13 @@ func TestCorrectNonceReading(t *testing.T) {
 	input, _ := hex.DecodeString("001800000000000000000021e88e84d211ce6c805f66aa2924c8a4886e81e0d3a287f2dab83a")
 	inputReader := bytes.NewReader(input)
 	decrypter, err := NewDecrypter(inputReader, e.key)
-	e.assertNoError(err)
+	require.NoError(t, err)
 
 	nonce := big.NewInt(0)
 	plainText := make([]byte, 8)
 	n, err := decrypter.Read(nonce, plainText)
-	e.assertNoError(err)
-	e.assertEquals(8, n)
-	e.assertEquals(big.NewInt(2222222), nonce)
-	e.assertEquals([]byte{1, 2, 3, 4, 5, 6, 7, 8}, plainText)
+	require.NoError(t, err)
+	assert.Equal(t, 8, n)
+	assert.Equal(t, big.NewInt(2222222), nonce)
+	assert.Equal(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, plainText)
 }

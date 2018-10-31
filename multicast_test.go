@@ -18,6 +18,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	. "github.com/posteo/fader"
 )
 
@@ -26,20 +29,19 @@ func TestMulticastTransferBetweenTwoFaders(t *testing.T) {
 	defer e.tearDown()
 
 	now := time.Now()
-	e.assertNoError(
-		e.multicastFaderOne.Store(&item{KeyField: "test", TimeField: now}))
+	require.NoError(t, e.multicastFaderOne.Store(&item{KeyField: "test", TimeField: now}))
 	time.Sleep(10 * time.Millisecond)
 
-	e.assertEquals(1, e.multicastFaderOne.Size())
-	e.assertEquals(1, e.multicastFaderTwo.Size())
+	assert.Equal(t, 1, e.multicastFaderOne.Size())
+	assert.Equal(t, 1, e.multicastFaderTwo.Size())
 
 	itemOne := e.multicastFaderOne.Earliest()
-	e.assertEquals("test", itemOne.Key())
-	e.assertEquals(now, itemOne.Time())
+	assert.Equal(t, "test", itemOne.Key())
+	assert.Equal(t, now, itemOne.Time())
 
 	itemTwo := e.multicastFaderTwo.Earliest()
-	e.assertEquals("test", itemTwo.Key())
-	e.assertEquals(now, itemTwo.Time())
+	assert.Equal(t, "test", itemTwo.Key())
+	assert.Equal(t, now.Unix(), itemTwo.Time().Unix())
 }
 
 func TestMulticastTransferOfMultipleStores(t *testing.T) {
@@ -51,16 +53,16 @@ func TestMulticastTransferOfMultipleStores(t *testing.T) {
 	e.multicastFaderOne.Store(&item{KeyField: "two", TimeField: now})
 	time.Sleep(10 * time.Millisecond)
 
-	e.assertEquals(2, e.multicastFaderOne.Size())
-	e.assertEquals(2, e.multicastFaderTwo.Size())
+	assert.Equal(t, 2, e.multicastFaderOne.Size())
+	assert.Equal(t, 2, e.multicastFaderTwo.Size())
 
 	itemOne := e.multicastFaderOne.Earliest()
-	e.assertEquals("one", itemOne.Key())
-	e.assertEquals(now, itemOne.Time())
+	assert.Equal(t, "one", itemOne.Key())
+	assert.Equal(t, now, itemOne.Time())
 
 	itemTwo := e.multicastFaderTwo.Earliest()
-	e.assertEquals("one", itemTwo.Key())
-	e.assertEquals(now, itemTwo.Time())
+	assert.Equal(t, "one", itemTwo.Key())
+	assert.Equal(t, now.Unix(), itemTwo.Time().Unix())
 }
 
 func TestMulticastTransferOfStoreAndExpire(t *testing.T) {
@@ -71,12 +73,12 @@ func TestMulticastTransferOfStoreAndExpire(t *testing.T) {
 	e.multicastFaderOne.Store(&item{KeyField: "test", TimeField: now})
 	time.Sleep(10 * time.Millisecond)
 
-	e.assertEquals(1, e.multicastFaderOne.Size())
-	e.assertEquals(1, e.multicastFaderTwo.Size())
+	assert.Equal(t, 1, e.multicastFaderOne.Size())
+	assert.Equal(t, 1, e.multicastFaderTwo.Size())
 	time.Sleep(100 * time.Millisecond)
 
-	e.assertEquals(0, e.multicastFaderOne.Size())
-	e.assertEquals(0, e.multicastFaderTwo.Size())
+	assert.Equal(t, 0, e.multicastFaderOne.Size())
+	assert.Equal(t, 0, e.multicastFaderTwo.Size())
 }
 
 func TestIfTransmissionFailsOnAReplyAttack(t *testing.T) {
@@ -84,26 +86,24 @@ func TestIfTransmissionFailsOnAReplyAttack(t *testing.T) {
 	defer e.tearDown()
 
 	i := &item{KeyField: "test", TimeField: time.Now()}
-	e.assertNoError(
-		e.multicastFaderOne.Store(i))
+	require.NoError(t, e.multicastFaderOne.Store(i))
 	time.Sleep(10 * time.Millisecond)
 
-	e.assertEquals(1, e.multicastFaderOne.Size())
-	e.assertEquals(1, e.multicastFaderTwo.Size())
+	assert.Equal(t, 1, e.multicastFaderOne.Size())
+	assert.Equal(t, 1, e.multicastFaderTwo.Size())
 
 	// forge a reply attack
 	memoryFader := NewMemory(e.expiresIn)
-	e.assertNoError(memoryFader.Open())
+	require.NoError(t, memoryFader.Open())
 	defer memoryFader.Close()
 
 	multicastFader := NewMulticast(memoryFader, "224.0.0.1:1888", e.key, e.multicastFaderIDOne, nil)
-	e.assertNoError(multicastFader.Open())
+	require.NoError(t, multicastFader.Open())
 	defer multicastFader.Close()
 
-	e.assertNoError(
-		multicastFader.Store(i))
+	require.NoError(t, multicastFader.Store(i))
 	time.Sleep(10 * time.Millisecond)
 
-	e.assertEquals(1, e.multicastFaderOne.Size())
-	e.assertEquals(1, e.multicastFaderTwo.Size())
+	assert.Equal(t, 1, e.multicastFaderOne.Size())
+	assert.Equal(t, 1, e.multicastFaderTwo.Size())
 }

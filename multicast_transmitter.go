@@ -18,10 +18,10 @@ import (
 	"bytes"
 	"crypto/rand"
 	"expvar"
+	"log"
 	"math/big"
 
-	"github.com/simia-tech/gol"
-	"gopkg.in/errgo.v1"
+	"github.com/simia-tech/errx"
 
 	"github.com/posteo/fader/crypt"
 )
@@ -65,13 +65,13 @@ func (t *multicastTransmitter) Write(payload []byte) (int, error) {
 
 func (t *multicastTransmitter) Flush() error {
 	if t.writeBuffer.Len() > maximalWriteBufferSize {
-		gol.Warning("send an udp multicast packet of size %d, should not exceed %d",
+		log.Printf("send an udp multicast packet of size %d, should not exceed %d",
 			t.writeBuffer.Len(), maximalWriteBufferSize)
 	}
 
 	if _, err := t.writer.Write(t.nonce, append(t.id, t.writeBuffer.Bytes()...)); err != nil {
 		t.increaseNonce()
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "write")
 	}
 	t.writeBuffer.Reset()
 
@@ -85,7 +85,7 @@ func (t *multicastTransmitter) Read(payload []byte) (int, error) {
 	nonce := big.NewInt(0)
 	for {
 		if _, err := t.reader.Read(nonce, buffer); err != nil {
-			return 0, errgo.Mask(err)
+			return 0, errx.Annotatef(err, "read")
 		}
 
 		id := buffer[:IDSize]

@@ -20,7 +20,7 @@ import (
 	"net"
 	"strings"
 
-	"gopkg.in/errgo.v1"
+	"github.com/simia-tech/errx"
 
 	"github.com/posteo/fader/crypt"
 )
@@ -64,32 +64,32 @@ func NewMulticast(
 
 func (m *multicast) Open() error {
 	if length := len(m.key); length != 16 && length != 24 && length != 32 {
-		return errgo.Newf("key must have a length of 16, 24 or 32")
+		return errx.Errorf("key has length %d, but must have a length of 16, 24 or 32", length)
 	}
 
 	udpAddress, err := net.ResolveUDPAddr("udp", m.address)
 	if err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "resolve udp address [%s]", m.address)
 	}
 
 	m.incomingConnection, err = net.ListenMulticastUDP("udp", nil, udpAddress)
 	if err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "listen multicast udp")
 	}
 
 	m.outgoingConnection, err = net.DialUDP("udp", nil, udpAddress)
 	if err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "dial udp")
 	}
 
 	decrypter, err := crypt.NewDecrypter(m.incomingConnection, m.key)
 	if err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "new decrypter")
 	}
 
 	encrypter, err := crypt.NewEncrypter(m.outgoingConnection, m.key)
 	if err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "new encrypter")
 	}
 
 	m.transmitter = newMulticastTransmitter(encrypter, decrypter, m.id)
@@ -101,17 +101,17 @@ func (m *multicast) Open() error {
 
 func (m *multicast) Close() error {
 	if err := m.incomingConnection.Close(); err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "close incoming connection")
 	}
 	if err := m.outgoingConnection.Close(); err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "close outgoing connection")
 	}
 	return nil
 }
 
 func (m *multicast) Store(item Item) error {
 	if err := m.send(item); err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "send item")
 	}
 	return m.parent.Store(item)
 }
@@ -136,11 +136,11 @@ func (m *multicast) send(item Item) error {
 	encoder := gob.NewEncoder(m.transmitter)
 
 	if err := encoder.Encode(&item); err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "encode item")
 	}
 
 	if err := m.transmitter.Flush(); err != nil {
-		return errgo.Mask(err)
+		return errx.Annotatef(err, "flush")
 	}
 
 	return nil
@@ -154,7 +154,7 @@ func (m *multicast) receiveLoop() {
 			if strings.Contains(err.Error(), "use of closed network connection") {
 				return
 			}
-			log.Printf("error during message decoding: %s", errgo.Details(err))
+			log.Printf("error during message decoding: %v", err)
 			continue
 		}
 
@@ -163,7 +163,7 @@ func (m *multicast) receiveLoop() {
 		}
 
 		if err := m.parent.Store(item); err != nil {
-			log.Printf("error during message storing: %s", errgo.Details(err))
+			log.Printf("error during message storing: %v", err)
 			return
 		}
 	}

@@ -16,10 +16,7 @@ package crypt_test
 
 import (
 	"encoding/hex"
-	"reflect"
 	"testing"
-
-	"github.com/simia-tech/gol"
 )
 
 type environment struct {
@@ -27,24 +24,8 @@ type environment struct {
 	key []byte
 }
 
-func init() {
-	gol.Initialize(&gol.Configuration{Backend: "console", Mask: "all"})
-}
-
 func setUp(tb testing.TB) *environment {
 	e := &environment{tb: tb}
 	e.key, _ = hex.DecodeString("ab72c77b97cb5fe9a382d9fe81ffdbed")
 	return e
-}
-
-func (e *environment) assertNoError(err error) {
-	if err != nil {
-		e.tb.Errorf("expected no error, got [%v]", err)
-	}
-}
-
-func (e *environment) assertEquals(expected, actual interface{}) {
-	if !reflect.DeepEqual(expected, actual) {
-		e.tb.Errorf("expected [%v], got [%v]", expected, actual)
-	}
 }
