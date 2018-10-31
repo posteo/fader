@@ -18,7 +18,6 @@
 // Example for a memory fader, that expires items after 2 seconds
 //
 //     memoryFader := fader.NewMemory(2*time.Second)
-//     memoryFader.Open()
 //     defer memoryFader.Close()
 //
 //     memoryFader.Store(item)
@@ -32,11 +31,9 @@
 // on thier own, so that each instance end up with the same data.
 //
 //    multicastFaderOne := fader.NewMulticast(memoryFaderOne, "224.0.0.1:1888", fader.DefaultKey)
-//    multicastFaderOne.Open()
 //    defer multicastFaderOne.Close()
 //
 //    multicastFaderTwo := fader.NewMulticast(memoryFaderTwo, "224.0.0.1:1888", fader.DefaultKey)
-//    multicastFaderTwo.Open()
 //    defer multicastFaderTwo.Close()
 //
 //    multicastFaderOne.Store(item)

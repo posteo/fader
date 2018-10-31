@@ -31,7 +31,6 @@ constructor function takes a `time.Duration` that specifies the period after whi
 
 ```go
 memoryFader := fader.NewMemory(1*time.Second)
-memoryFader.Open()
 defer memoryFader.Close()
 
 memoryFader.Store(item)
@@ -49,11 +48,9 @@ given multicast group. The packet is encrypted using the given key.
 
 ```go
 multicastFaderOne := fader.NewMulticast(memoryFaderOne, "224.0.0.1:1888", fader.DefaultKey)
-multicastFaderOne.Open()
 defer multicastFaderOne.Close()
 
 multicastFaderTwo := fader.NewMulticast(memoryFaderTwo, "224.0.0.1:1888", fader.DefaultKey)
-multicastFaderTwo.Open()
 defer multicastFaderTwo.Close()
 
 multicastFaderOne.Store(item)
