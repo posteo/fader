@@ -18,10 +18,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/posteo/fader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	. "github.com/posteo/fader"
 )
 
 func TestMulticastTransferBetweenTwoFaders(t *testing.T) {
@@ -93,10 +92,10 @@ func TestIfTransmissionFailsOnAReplyAttack(t *testing.T) {
 	assert.Equal(t, 1, e.multicastFaderTwo.Size())
 
 	// forge a reply attack
-	memoryFader := NewMemory(e.expiresIn)
+	memoryFader := fader.NewMemory(e.expiresIn)
 	defer memoryFader.Close()
 
-	multicastFader, err := NewMulticast(memoryFader, "224.0.0.1:1888", e.key, e.multicastFaderIDOne, nil)
+	multicastFader, err := fader.NewMulticast(memoryFader, "224.0.0.1:2000", e.key, e.multicastFaderIDOne, nil)
 	require.NoError(t, err)
 	defer multicastFader.Close()
 

@@ -23,14 +23,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	. "github.com/posteo/fader/crypt"
+	"github.com/posteo/fader/crypt"
 )
 
 func TestEncryption(t *testing.T) {
 	e := setUp(t)
 
 	buffer := &bytes.Buffer{}
-	encrypter, err := NewEncrypter(buffer, e.key)
+	encrypter, err := crypt.NewEncrypter(buffer, e.key)
 	require.NoError(t, err)
 
 	nonce := big.NewInt(0)
@@ -48,7 +48,7 @@ func TestNonceAlternation(t *testing.T) {
 	e := setUp(t)
 
 	buffer := &bytes.Buffer{}
-	encrypter, err := NewEncrypter(buffer, e.key)
+	encrypter, err := crypt.NewEncrypter(buffer, e.key)
 	require.NoError(t, err)
 
 	nonce := big.NewInt(2222222)

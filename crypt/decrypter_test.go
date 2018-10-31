@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	. "github.com/posteo/fader/crypt"
+	"github.com/posteo/fader/crypt"
 )
 
 func TestDecryption(t *testing.T) {
@@ -31,7 +31,7 @@ func TestDecryption(t *testing.T) {
 
 	input, _ := hex.DecodeString("00180000000000000000000000002e3b1966d4bb71503ec7942a5f4e352735219d268cbdcda0")
 	inputBuffer := bytes.NewBuffer(input)
-	decrypter, err := NewDecrypter(inputBuffer, e.key)
+	decrypter, err := crypt.NewDecrypter(inputBuffer, e.key)
 	require.NoError(t, err)
 
 	nonce := big.NewInt(0)
@@ -47,7 +47,7 @@ func TestCorrectNonceReading(t *testing.T) {
 
 	input, _ := hex.DecodeString("001800000000000000000021e88e84d211ce6c805f66aa2924c8a4886e81e0d3a287f2dab83a")
 	inputReader := bytes.NewReader(input)
-	decrypter, err := NewDecrypter(inputReader, e.key)
+	decrypter, err := crypt.NewDecrypter(inputReader, e.key)
 	require.NoError(t, err)
 
 	nonce := big.NewInt(0)
