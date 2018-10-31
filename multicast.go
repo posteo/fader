@@ -25,7 +25,7 @@ import (
 	"github.com/posteo/fader/crypt"
 )
 
-type multicast struct {
+type Multicast struct {
 	parent              Fader
 	address             string
 	key                 []byte
@@ -37,7 +37,7 @@ type multicast struct {
 }
 
 // NewMulticast creates a Fader instance that delegates all calls to a parent Fader instance.
-// Additional to that, all store-operations are published to a multicast group
+// Additional to that, all store-operations are published to a Multicast group
 // which is specified by the given address. All packets will encrypted with
 // AES-GCM using the given key. The length of the key's byte-slice, can be 16, 24
 // or 32 and will define if AES-128, AES-192 or AES-256 is used.
@@ -52,54 +52,52 @@ func NewMulticast(
 	key []byte,
 	id []byte,
 	itemReceivedHandler func(Item) bool,
-) Fader {
-	return &multicast{
+) (*Multicast, error) {
+	m := &Multicast{
 		parent:              parent,
 		address:             address,
 		key:                 key,
 		id:                  id,
 		itemReceivedHandler: itemReceivedHandler,
 	}
-}
 
-func (m *multicast) Open() error {
 	if length := len(m.key); length != 16 && length != 24 && length != 32 {
-		return errx.Errorf("key has length %d, but must have a length of 16, 24 or 32", length)
+		return nil, errx.Errorf("key has length %d, but must have a length of 16, 24 or 32", length)
 	}
 
 	udpAddress, err := net.ResolveUDPAddr("udp", m.address)
 	if err != nil {
-		return errx.Annotatef(err, "resolve udp address [%s]", m.address)
+		return nil, errx.Annotatef(err, "resolve udp address [%s]", m.address)
 	}
 
 	m.incomingConnection, err = net.ListenMulticastUDP("udp", nil, udpAddress)
 	if err != nil {
-		return errx.Annotatef(err, "listen multicast udp")
+		return nil, errx.Annotatef(err, "listen Multicast udp")
 	}
 
 	m.outgoingConnection, err = net.DialUDP("udp", nil, udpAddress)
 	if err != nil {
-		return errx.Annotatef(err, "dial udp")
+		return nil, errx.Annotatef(err, "dial udp")
 	}
 
 	decrypter, err := crypt.NewDecrypter(m.incomingConnection, m.key)
 	if err != nil {
-		return errx.Annotatef(err, "new decrypter")
+		return nil, errx.Annotatef(err, "new decrypter")
 	}
 
 	encrypter, err := crypt.NewEncrypter(m.outgoingConnection, m.key)
 	if err != nil {
-		return errx.Annotatef(err, "new encrypter")
+		return nil, errx.Annotatef(err, "new encrypter")
 	}
 
 	m.transmitter = newMulticastTransmitter(encrypter, decrypter, m.id)
 
 	go m.receiveLoop()
 
-	return nil
+	return m, nil
 }
 
-func (m *multicast) Close() error {
+func (m *Multicast) Close() error {
 	if err := m.incomingConnection.Close(); err != nil {
 		return errx.Annotatef(err, "close incoming connection")
 	}
@@ -109,30 +107,30 @@ func (m *multicast) Close() error {
 	return nil
 }
 
-func (m *multicast) Store(item Item) error {
+func (m *Multicast) Store(item Item) error {
 	if err := m.send(item); err != nil {
 		return errx.Annotatef(err, "send item")
 	}
 	return m.parent.Store(item)
 }
 
-func (m *multicast) Earliest() Item {
+func (m *Multicast) Earliest() Item {
 	return m.parent.Earliest()
 }
 
-func (m *multicast) Select(key string) []Item {
+func (m *Multicast) Select(key string) []Item {
 	return m.parent.Select(key)
 }
 
-func (m *multicast) Detect(key string) Item {
+func (m *Multicast) Detect(key string) Item {
 	return m.parent.Detect(key)
 }
 
-func (m *multicast) Size() int {
+func (m *Multicast) Size() int {
 	return m.parent.Size()
 }
 
-func (m *multicast) send(item Item) error {
+func (m *Multicast) send(item Item) error {
 	encoder := gob.NewEncoder(m.transmitter)
 
 	if err := encoder.Encode(&item); err != nil {
@@ -146,7 +144,7 @@ func (m *multicast) send(item Item) error {
 	return nil
 }
 
-func (m *multicast) receiveLoop() {
+func (m *Multicast) receiveLoop() {
 	var item Item
 	for {
 		decoder := gob.NewDecoder(m.transmitter)

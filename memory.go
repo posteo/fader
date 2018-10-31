@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-type memory struct {
+type Memory struct {
 	expiresIn  time.Duration
 	items      *itemHeap
 	itemStored chan bool
@@ -34,44 +34,39 @@ func init() {
 	veryLongDuration, _ = time.ParseDuration("24h")
 }
 
-// NewMemory creates a Fader instance that stores all data in the memory. The expiresIn
+// NewMemory creates a Fader instance that stores all data in the Memory. The expiresIn
 // parameter defines after which period a stored item will be removed.
-func NewMemory(expiresIn time.Duration) Fader {
-	return &memory{
+func NewMemory(expiresIn time.Duration) *Memory {
+	m := &Memory{
 		expiresIn:  expiresIn,
 		items:      &itemHeap{},
 		itemStored: make(chan bool),
 		closed:     make(chan bool),
 	}
-}
-
-func (m *memory) Open() error {
 	heap.Init(m.items)
-
 	go m.expiryLoop()
-
-	return nil
+	return m
 }
 
-func (m *memory) Close() error {
+func (m *Memory) Close() error {
 	m.closed <- true
 	return nil
 }
 
-func (m *memory) Store(item Item) error {
+func (m *Memory) Store(item Item) error {
 	heap.Push(m.items, item)
 	m.itemStored <- true
 	return nil
 }
 
-func (m *memory) Earliest() Item {
+func (m *Memory) Earliest() Item {
 	if m.Size() > 0 {
 		return (*m.items)[0]
 	}
 	return nil
 }
 
-func (m *memory) Select(key string) []Item {
+func (m *Memory) Select(key string) []Item {
 	var result []Item
 	for _, item := range *m.items {
 		if item.Key() == key {
@@ -81,7 +76,7 @@ func (m *memory) Select(key string) []Item {
 	return result
 }
 
-func (m *memory) Detect(key string) Item {
+func (m *Memory) Detect(key string) Item {
 	for _, item := range *m.items {
 		if item.Key() == key {
 			return item
@@ -90,11 +85,11 @@ func (m *memory) Detect(key string) Item {
 	return nil
 }
 
-func (m *memory) Size() int {
+func (m *Memory) Size() int {
 	return m.items.Len()
 }
 
-func (m *memory) removeEarliest() Item {
+func (m *Memory) removeEarliest() Item {
 	if m.Size() > 0 {
 		return heap.Pop(m.items).(Item)
 	}
@@ -111,7 +106,7 @@ func (m *memory) removeEarliest() Item {
 // duration to the next item expiry is calculated.
 // If no items left, the function returns to it's initial state where it waits
 // for an item to be stored.
-func (m *memory) expiryLoop() {
+func (m *Memory) expiryLoop() {
 	durationTillNextExpiry := veryLongDuration
 
 expiryLoop:
@@ -128,7 +123,7 @@ expiryLoop:
 	}
 }
 
-func (m *memory) findNextDurationTillNextExpiry() time.Duration {
+func (m *Memory) findNextDurationTillNextExpiry() time.Duration {
 	result := veryLongDuration
 
 	for item := m.Earliest(); item != nil; item = m.Earliest() {

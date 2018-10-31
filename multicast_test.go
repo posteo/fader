@@ -94,11 +94,10 @@ func TestIfTransmissionFailsOnAReplyAttack(t *testing.T) {
 
 	// forge a reply attack
 	memoryFader := NewMemory(e.expiresIn)
-	require.NoError(t, memoryFader.Open())
 	defer memoryFader.Close()
 
-	multicastFader := NewMulticast(memoryFader, "224.0.0.1:1888", e.key, e.multicastFaderIDOne, nil)
-	require.NoError(t, multicastFader.Open())
+	multicastFader, err := NewMulticast(memoryFader, "224.0.0.1:1888", e.key, e.multicastFaderIDOne, nil)
+	require.NoError(t, err)
 	defer multicastFader.Close()
 
 	require.NoError(t, multicastFader.Store(i))

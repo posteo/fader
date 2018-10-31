@@ -49,9 +49,6 @@ package fader
 
 // Fader defines the fader interface.
 type Fader interface {
-	Open() error
-	Close() error
-
 	Store(Item) error
 	Earliest() Item
 	Select(string) []Item
