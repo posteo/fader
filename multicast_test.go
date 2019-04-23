@@ -24,7 +24,7 @@ import (
 )
 
 func TestMulticastTransferBetweenTwoFaders(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 	defer e.tearDown()
 
 	now := time.Now()
@@ -44,7 +44,7 @@ func TestMulticastTransferBetweenTwoFaders(t *testing.T) {
 }
 
 func TestMulticastTransferOfMultipleStores(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 	defer e.tearDown()
 
 	now := time.Now()
@@ -65,7 +65,7 @@ func TestMulticastTransferOfMultipleStores(t *testing.T) {
 }
 
 func TestMulticastTransferOfStoreAndExpire(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 	defer e.tearDown()
 
 	now := time.Now()
@@ -81,7 +81,7 @@ func TestMulticastTransferOfStoreAndExpire(t *testing.T) {
 }
 
 func TestIfTransmissionFailsOnAReplyAttack(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 	defer e.tearDown()
 
 	i := &item{KeyField: "test", TimeField: time.Now()}

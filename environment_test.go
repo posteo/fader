@@ -36,7 +36,7 @@ type environment struct {
 	tearDown            func()
 }
 
-func setUp(tb testing.TB) *environment {
+func setUpTestEnvironment(tb testing.TB) *environment {
 	expiresIn, _ := time.ParseDuration("50ms")
 
 	memoryFaderOne := fader.NewMemory(expiresIn)

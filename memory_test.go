@@ -22,7 +22,7 @@ import (
 )
 
 func TestStorage(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 
 	item := &item{KeyField: "test", TimeField: time.Now()}
 	e.memoryFaderOne.Store(item)
@@ -32,7 +32,7 @@ func TestStorage(t *testing.T) {
 }
 
 func TestSortingByTime(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 
 	now := time.Now()
 	duration, _ := time.ParseDuration("1s")
@@ -47,7 +47,7 @@ func TestSortingByTime(t *testing.T) {
 }
 
 func TestSelect(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 
 	itemOne := &item{KeyField: "one", TimeField: time.Now()}
 	itemTwo := &item{KeyField: "two", TimeField: time.Now()}
@@ -61,7 +61,7 @@ func TestSelect(t *testing.T) {
 }
 
 func TestExpiry(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 
 	item := &item{KeyField: "one", TimeField: time.Now()}
 	e.memoryFaderOne.Store(item)
@@ -72,7 +72,7 @@ func TestExpiry(t *testing.T) {
 }
 
 func TestExpiryOfTwoItem(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 
 	now := time.Now()
 	duration, _ := time.ParseDuration("20ms")
@@ -92,7 +92,7 @@ func TestExpiryOfTwoItem(t *testing.T) {
 }
 
 func TestExpiryOfTwoItemsThatHasBeenAddedInReverseOrder(t *testing.T) {
-	e := setUp(t)
+	e := setUpTestEnvironment(t)
 
 	now := time.Now()
 	duration, _ := time.ParseDuration("20ms")
