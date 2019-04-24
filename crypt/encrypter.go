@@ -29,6 +29,7 @@ type encrypter struct {
 	aesGCM cipher.AEAD
 }
 
+// NewEncrypter returns a new encrypter.
 func NewEncrypter(parent io.Writer, key []byte) (Writer, error) {
 	aes, err := aes.NewCipher(key)
 	if err != nil {

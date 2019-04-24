@@ -20,6 +20,7 @@ import (
 	"time"
 )
 
+// Memory implements a memory fader.
 type Memory struct {
 	expiresIn  time.Duration
 	items      *itemHeap
@@ -49,6 +50,7 @@ func NewMemory(expiresIn time.Duration) *Memory {
 	return m
 }
 
+// Put places an item with the provided key, time and value in the fader.
 func (m *Memory) Put(key []byte, t time.Time, value []byte) error {
 	heap.Push(m.items, &item{
 		key:   key,
@@ -59,6 +61,8 @@ func (m *Memory) Put(key []byte, t time.Time, value []byte) error {
 	return nil
 }
 
+// Get returns time and value for the provided key. If no such key exists, a value
+// of nil is returned.
 func (m *Memory) Get(key []byte) (time.Time, []byte) {
 	for _, item := range *m.items {
 		if bytes.Equal(item.key, key) {
@@ -68,6 +72,7 @@ func (m *Memory) Get(key []byte) (time.Time, []byte) {
 	return time.Time{}, nil
 }
 
+// Earliest returns key, time and value of the earliest item in the fader.
 func (m *Memory) Earliest() ([]byte, time.Time, []byte) {
 	if m.Size() > 0 {
 		item := (*m.items)[0]
@@ -76,20 +81,25 @@ func (m *Memory) Earliest() ([]byte, time.Time, []byte) {
 	return nil, time.Time{}, nil
 }
 
-func (m *Memory) Select(key []byte) [][]byte {
-	var values [][]byte
+// Select returns all times and values with the provided key.
+func (m *Memory) Select(key []byte) ([]time.Time, [][]byte) {
+	times := []time.Time{}
+	values := [][]byte{}
 	for _, item := range *m.items {
 		if bytes.Equal(item.key, key) {
+			times = append(times, item.time)
 			values = append(values, item.value)
 		}
 	}
-	return values
+	return times, values
 }
 
+// Size returns the number of items in the fader.
 func (m *Memory) Size() int {
 	return m.items.Len()
 }
 
+// Close tears down the fader.
 func (m *Memory) Close() error {
 	m.closed <- true
 	return nil

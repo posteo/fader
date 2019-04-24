@@ -120,8 +120,8 @@ func (m *Multicast) Earliest() ([]byte, time.Time, []byte) {
 	return m.parent.Earliest()
 }
 
-// Select returns all values with the provided key.
-func (m *Multicast) Select(key []byte) [][]byte {
+// Select returns all times and values with the provided key.
+func (m *Multicast) Select(key []byte) ([]time.Time, [][]byte) {
 	return m.parent.Select(key)
 }
 

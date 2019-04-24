@@ -51,6 +51,6 @@ type Fader interface {
 	Put([]byte, time.Time, []byte) error
 	Get([]byte) (time.Time, []byte)
 	Earliest() ([]byte, time.Time, []byte)
-	Select([]byte) [][]byte
+	Select([]byte) ([]time.Time, [][]byte)
 	Size() int
 }

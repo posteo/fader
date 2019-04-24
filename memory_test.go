@@ -59,7 +59,9 @@ func TestMemorySelect(t *testing.T) {
 	require.NoError(t, fader.Put([]byte("one"), now, []byte("value one")))
 	require.NoError(t, fader.Put([]byte("two"), now, []byte("value two")))
 
-	values := fader.Select([]byte("one"))
+	times, values := fader.Select([]byte("one"))
+	assert.Equal(t, 1, len(times))
+	assert.Equal(t, now.Unix(), times[0].Unix())
 	assert.Equal(t, 1, len(values))
 	assert.Equal(t, "value one", string(values[0]))
 }

@@ -30,10 +30,10 @@ type decrypter struct {
 	aesGCM cipher.AEAD
 }
 
-var (
-	ErrInvalidNonce = errors.New("tried to decrypt with a previouly used nonce")
-)
+// ErrInvalidNonce is returned if an invalid nonce if recieved.
+var ErrInvalidNonce = errors.New("tried to decrypt with a previouly used nonce")
 
+// NewDecrypter returns a new decrypter.
 func NewDecrypter(parent io.Reader, key []byte) (Reader, error) {
 	aes, err := aes.NewCipher(key)
 	if err != nil {
