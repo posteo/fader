@@ -1,4 +1,4 @@
-[![Inline docs](http://inch-ci.org/github/posteo/fader.svg?branch=master)](http://inch-ci.org/github/posteo/fader)
+[![Go Report Card](https://goreportcard.com/badge/posteo/fader)](https://goreportcard.com/report/posteo/fader) [![Build Status](https://travis-ci.org/posteo/fader.svg?branch=master)](https://travis-ci.org/posteo/fader) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/posteo/fader/blob/master/LICENSE)
 
 # Fader
 
@@ -8,11 +8,11 @@ In-Memory storage that distributes items via UDP multicast.
 
 ```go
 type Fader interface {
-  Put([]byte, time.Time, []byte) error
-	Get([]byte) (time.Time, []byte)
-	Earliest() ([]byte, time.Time, []byte)
-	Select([]byte) [][]byte
-	Size() int
+    Put([]byte, time.Time, []byte) error
+    Get([]byte) (time.Time, []byte)
+    Earliest() ([]byte, time.Time, []byte)
+    Select([]byte) [][]byte
+    Size() int
 }
 ```
 

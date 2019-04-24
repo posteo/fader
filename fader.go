@@ -28,7 +28,7 @@
 //
 // The multicast fader can be used to distribute `Put` operations via a multicast
 // group. Other instances that listen to the same group, will perform that operation
-// on thier own, so that each instance end up with the same data.
+// on their own, so that each instance end up with the same data.
 //
 //    multicastFaderOne := fader.NewMulticast(memoryFaderOne, "224.0.0.1:1888", key)
 //    defer multicastFaderOne.Close()
