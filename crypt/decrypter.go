@@ -30,7 +30,7 @@ type decrypter struct {
 	aesGCM cipher.AEAD
 }
 
-// ErrInvalidNonce is returned if an invalid nonce if recieved.
+// ErrInvalidNonce is returned if an invalid nonce if received.
 var ErrInvalidNonce = errors.New("tried to decrypt with a previouly used nonce")
 
 // NewDecrypter returns a new decrypter.
