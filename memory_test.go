@@ -19,100 +19,100 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/posteo/fader"
 )
 
-func TestStorage(t *testing.T) {
-	e := setUpTestEnvironment(t)
+func TestMemoryPutAndGet(t *testing.T) {
+	fader := fader.NewMemory(50 * time.Millisecond)
 
-	item := &item{KeyField: "test", TimeField: time.Now()}
-	e.memoryFaderOne.Store(item)
+	key, time, value := []byte("key"), time.Now(), []byte("value")
+	require.NoError(t, fader.Put(key, time, value))
 
-	assert.Equal(t, 1, e.memoryFaderOne.Size())
-	assert.Equal(t, item, e.memoryFaderOne.Detect(item.Key()))
+	require.Equal(t, 1, fader.Size())
+
+	ti, v := fader.Get(key)
+	assert.Equal(t, time, ti)
+	assert.Equal(t, value, v)
 }
 
-func TestSortingByTime(t *testing.T) {
-	e := setUpTestEnvironment(t)
+func TestMemorySortingByTime(t *testing.T) {
+	fader := fader.NewMemory(50 * time.Millisecond)
 
 	now := time.Now()
-	duration, _ := time.ParseDuration("1s")
 
-	itemOne := &item{KeyField: "one", TimeField: now.Add(duration)}
-	itemTwo := &item{KeyField: "two", TimeField: now}
+	require.NoError(t, fader.Put([]byte("one"), now.Add(time.Second), []byte("value one")))
+	require.NoError(t, fader.Put([]byte("two"), now, []byte("value two")))
 
-	e.memoryFaderOne.Store(itemOne)
-	e.memoryFaderOne.Store(itemTwo)
-
-	assert.Equal(t, itemTwo, e.memoryFaderOne.Earliest())
+	key, time, value := fader.Earliest()
+	assert.Equal(t, "two", string(key))
+	assert.Equal(t, now, time)
+	assert.Equal(t, "value two", string(value))
 }
 
-func TestSelect(t *testing.T) {
-	e := setUpTestEnvironment(t)
+func TestMemorySelect(t *testing.T) {
+	fader := fader.NewMemory(50 * time.Millisecond)
 
-	itemOne := &item{KeyField: "one", TimeField: time.Now()}
-	itemTwo := &item{KeyField: "two", TimeField: time.Now()}
+	now := time.Now()
 
-	e.memoryFaderOne.Store(itemOne)
-	e.memoryFaderOne.Store(itemTwo)
+	require.NoError(t, fader.Put([]byte("one"), now, []byte("value one")))
+	require.NoError(t, fader.Put([]byte("two"), now, []byte("value two")))
 
-	items := e.memoryFaderOne.Select("one")
-	assert.Equal(t, 1, len(items))
-	assert.Equal(t, itemOne, items[0])
+	values := fader.Select([]byte("one"))
+	assert.Equal(t, 1, len(values))
+	assert.Equal(t, "value one", string(values[0]))
 }
 
-func TestExpiry(t *testing.T) {
-	e := setUpTestEnvironment(t)
+func TestMemoryExpiry(t *testing.T) {
+	fader := fader.NewMemory(50 * time.Millisecond)
 
-	item := &item{KeyField: "one", TimeField: time.Now()}
-	e.memoryFaderOne.Store(item)
+	require.NoError(t, fader.Put([]byte("one"), time.Now(), []byte("value one")))
 
 	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, nil, e.memoryFaderOne.Detect(item.Key()))
+	_, v := fader.Get([]byte("one"))
+	assert.Nil(t, v)
 }
 
-func TestExpiryOfTwoItem(t *testing.T) {
-	e := setUpTestEnvironment(t)
+func TestMemoryExpiryOfTwoItem(t *testing.T) {
+	fader := fader.NewMemory(50 * time.Millisecond)
 
 	now := time.Now()
-	duration, _ := time.ParseDuration("20ms")
 
-	itemOne := &item{KeyField: "one", TimeField: now}
-	itemTwo := &item{KeyField: "two", TimeField: now.Add(duration)}
+	require.NoError(t, fader.Put([]byte("one"), now, []byte("value one")))
+	require.NoError(t, fader.Put([]byte("two"), now.Add(20*time.Millisecond), []byte("value two")))
 
-	e.memoryFaderOne.Store(itemOne)
-	e.memoryFaderOne.Store(itemTwo)
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, 2, e.memoryFaderOne.Size())
+	assert.Equal(t, 2, fader.Size())
 	time.Sleep(50 * time.Millisecond)
-	assert.Equal(t, 1, e.memoryFaderOne.Size())
+	assert.Equal(t, 1, fader.Size())
 	time.Sleep(20 * time.Millisecond)
-	assert.Equal(t, 0, e.memoryFaderOne.Size())
+	assert.Equal(t, 0, fader.Size())
 }
 
-func TestExpiryOfTwoItemsThatHasBeenAddedInReverseOrder(t *testing.T) {
-	e := setUpTestEnvironment(t)
+func TestMemoryExpiryOfTwoItemsThatHasBeenAddedInReverseOrder(t *testing.T) {
+	fader := fader.NewMemory(50 * time.Millisecond)
 
 	now := time.Now()
-	duration, _ := time.ParseDuration("20ms")
 
-	itemOne := &item{KeyField: "one", TimeField: now}
-	itemTwo := &item{KeyField: "two", TimeField: now.Add(duration)}
-
-	e.memoryFaderOne.Store(itemTwo)
+	require.NoError(t, fader.Put([]byte("two"), now.Add(20*time.Millisecond), []byte("value two")))
 	time.Sleep(5 * time.Millisecond)
-	e.memoryFaderOne.Store(itemOne)
+	require.NoError(t, fader.Put([]byte("one"), now, []byte("value one")))
 	time.Sleep(5 * time.Millisecond)
 
-	assert.Equal(t, 2, e.memoryFaderOne.Size())
-	assert.Equal(t, itemOne, e.memoryFaderOne.Earliest())
+	assert.Equal(t, 2, fader.Size())
+	key, _, _ := fader.Earliest()
+	assert.Equal(t, "one", string(key))
 	time.Sleep(50 * time.Millisecond)
 
-	assert.Equal(t, 1, e.memoryFaderOne.Size())
-	assert.Equal(t, itemTwo, e.memoryFaderOne.Earliest())
+	assert.Equal(t, 1, fader.Size())
+	key, _, _ = fader.Earliest()
+	assert.Equal(t, "two", string(key))
 	time.Sleep(20 * time.Millisecond)
 
-	assert.Equal(t, 0, e.memoryFaderOne.Size())
-	assert.Equal(t, nil, e.memoryFaderOne.Earliest())
+	assert.Equal(t, 0, fader.Size())
+	key, _, _ = fader.Earliest()
+	assert.Nil(t, key)
 }

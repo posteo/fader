@@ -17,26 +17,26 @@
 //
 // Example for a memory fader, that expires items after 2 seconds
 //
-//     memoryFader := fader.NewMemory(2*time.Second)
-//     defer memoryFader.Close()
+//    memoryFader := fader.NewMemory(2*time.Second)
+//    defer memoryFader.Close()
 //
-//     memoryFader.Store(item)
-//     memoryFader.Size() // => 1
+//    memoryFader.Put([]byte("key"), time.Now(), []byte("value"))
+//    memoryFader.Size() // => 1
 //
-//     time.Sleep(3*time.Second)
-//     memoryFader.Size() // => 0
+//    time.Sleep(3*time.Second)
+//    memoryFader.Size() // => 0
 //
-// The multicast fader can be used to distribute `Store` operations via a multicast
+// The multicast fader can be used to distribute `Put` operations via a multicast
 // group. Other instances that listen to the same group, will perform that operation
 // on thier own, so that each instance end up with the same data.
 //
-//    multicastFaderOne := fader.NewMulticast(memoryFaderOne, "224.0.0.1:1888", fader.DefaultKey)
+//    multicastFaderOne := fader.NewMulticast(memoryFaderOne, "224.0.0.1:1888", key)
 //    defer multicastFaderOne.Close()
 //
-//    multicastFaderTwo := fader.NewMulticast(memoryFaderTwo, "224.0.0.1:1888", fader.DefaultKey)
+//    multicastFaderTwo := fader.NewMulticast(memoryFaderTwo, "224.0.0.1:1888", key)
 //    defer multicastFaderTwo.Close()
 //
-//    multicastFaderOne.Store(item)
+//    multicastFaderOne.Put([]byte("key"), time.Now(), []byte("value"))
 //    multicastFaderOne.Size() // => 1
 //
 //    time.Sleep(10*time.Millisecond)
@@ -44,11 +44,13 @@
 //    multicastFaderTwo.Size() // => 1
 package fader
 
+import "time"
+
 // Fader defines the fader interface.
 type Fader interface {
-	Store(Item) error
-	Earliest() Item
-	Select(string) []Item
-	Detect(string) Item
+	Put([]byte, time.Time, []byte) error
+	Get([]byte) (time.Time, []byte)
+	Earliest() ([]byte, time.Time, []byte)
+	Select([]byte) [][]byte
 	Size() int
 }

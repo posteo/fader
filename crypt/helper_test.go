@@ -11,21 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package crypt_test
 
-import (
-	"encoding/hex"
-	"testing"
-)
-
-type environment struct {
-	tb  testing.TB
-	key []byte
-}
-
-func setUp(tb testing.TB) *environment {
-	e := &environment{tb: tb}
-	e.key, _ = hex.DecodeString("ab72c77b97cb5fe9a382d9fe81ffdbed")
-	return e
-}
+var key = []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}

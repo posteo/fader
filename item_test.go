@@ -15,7 +15,6 @@
 package fader_test
 
 import (
-	"encoding/gob"
 	"time"
 )
 
@@ -24,14 +23,26 @@ type item struct {
 	TimeField time.Time
 }
 
-func init() {
-	gob.Register(item{})
-}
-
-func (i item) Key() string {
+func (i *item) Key() string {
 	return i.KeyField
 }
 
-func (i item) Time() time.Time {
+func (i *item) Time() time.Time {
 	return i.TimeField
+}
+
+func (i *item) MarshalBinary() ([]byte, error) {
+	td, err := i.TimeField.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	return append(td, []byte(i.Key())...), nil
+}
+
+func (i *item) UnmarshalBinary(data []byte) error {
+	if err := i.TimeField.UnmarshalBinary(data[:15]); err != nil {
+		return err
+	}
+	i.KeyField = string(data[15:])
+	return nil
 }

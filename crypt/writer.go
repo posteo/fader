@@ -16,6 +16,7 @@ package crypt
 
 import "math/big"
 
+// Writer defines an interface similar to [[io.Writer]], but adds a nonce parameter of type `*big.Int`.
 type Writer interface {
 	Write(*big.Int, []byte) (int, error)
 }

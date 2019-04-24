@@ -17,7 +17,6 @@ package fader
 import (
 	"bytes"
 	"crypto/rand"
-	"expvar"
 	"log"
 	"math/big"
 
@@ -27,8 +26,7 @@ import (
 )
 
 const (
-	IDSize = 10
-
+	idSize                 = 10
 	maximalWriteBufferSize = 512
 )
 
@@ -41,13 +39,9 @@ type multicastTransmitter struct {
 	foreignNonces map[string]*big.Int
 }
 
-var (
-	metricDroppedPackets = expvar.NewInt("event:fader.multicast.dropped")
-)
-
 func newMulticastTransmitter(writer crypt.Writer, reader crypt.Reader, id []byte) *multicastTransmitter {
 	if id == nil || len(id) != 10 {
-		id = randomBytes(IDSize)
+		id = randomBytes(idSize)
 	}
 	return &multicastTransmitter{
 		writer:        writer,
@@ -69,7 +63,8 @@ func (t *multicastTransmitter) Flush() error {
 			t.writeBuffer.Len(), maximalWriteBufferSize)
 	}
 
-	if _, err := t.writer.Write(t.nonce, append(t.id, t.writeBuffer.Bytes()...)); err != nil {
+	buffer := append(t.id, t.writeBuffer.Bytes()...)
+	if _, err := t.writer.Write(t.nonce, buffer); err != nil {
 		t.increaseNonce()
 		return errx.Annotatef(err, "write")
 	}
@@ -80,29 +75,30 @@ func (t *multicastTransmitter) Flush() error {
 }
 
 func (t *multicastTransmitter) Read(payload []byte) (int, error) {
-	buffer := make([]byte, IDSize+len(payload))
+	buffer := make([]byte, idSize+len(payload))
+	packet := []byte{}
 
 	nonce := big.NewInt(0)
 	for {
-		if _, err := t.reader.Read(nonce, buffer); err != nil {
+		n, err := t.reader.Read(nonce, buffer)
+		if err != nil {
 			return 0, errx.Annotatef(err, "read")
 		}
+		packet = buffer[:n]
 
-		id := buffer[:IDSize]
+		id := packet[:idSize]
 		if bytes.Equal(t.id, id) {
 			continue
 		}
 
 		if !t.validNonce(id, nonce) {
-			metricDroppedPackets.Add(1)
 			continue
 		}
 
 		break
 	}
 
-	copy(payload, buffer[IDSize:])
-	return len(payload), nil
+	return copy(payload, packet[idSize:]), nil
 }
 
 func (t *multicastTransmitter) increaseNonce() {

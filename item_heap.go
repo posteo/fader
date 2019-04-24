@@ -14,14 +14,14 @@
 
 package fader
 
-type itemHeap []Item
+type itemHeap []*item
 
 func (h itemHeap) Len() int {
 	return len(h)
 }
 
 func (h itemHeap) Less(i, j int) bool {
-	return h[i].Time().Before(h[j].Time())
+	return h[i].time.Before(h[j].time)
 }
 
 func (h itemHeap) Swap(i, j int) {
@@ -29,7 +29,7 @@ func (h itemHeap) Swap(i, j int) {
 }
 
 func (h *itemHeap) Push(value interface{}) {
-	*h = append(*h, value.(Item))
+	*h = append(*h, value.(*item))
 }
 
 func (h *itemHeap) Pop() interface{} {

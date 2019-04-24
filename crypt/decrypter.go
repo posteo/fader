@@ -22,7 +22,7 @@ import (
 	"io"
 	"math/big"
 
-	"gopkg.in/errgo.v1"
+	"github.com/simia-tech/errx"
 )
 
 type decrypter struct {
@@ -37,12 +37,12 @@ var (
 func NewDecrypter(parent io.Reader, key []byte) (Reader, error) {
 	aes, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, errgo.Mask(err)
+		return nil, errx.Annotatef(err, "new cipher")
 	}
 
 	aesGCM, err := cipher.NewGCM(aes)
 	if err != nil {
-		return nil, errgo.Mask(err)
+		return nil, errx.Annotatef(err, "new gcm")
 	}
 
 	return &decrypter{
@@ -54,24 +54,24 @@ func NewDecrypter(parent io.Reader, key []byte) (Reader, error) {
 func (d *decrypter) Read(nonce *big.Int, data []byte) (int, error) {
 	length := uint16(0)
 	if err := binary.Read(d.parent, binary.BigEndian, &length); err != nil {
-		return 0, errgo.Mask(err)
+		return 0, errx.Annotatef(err, "read length")
 	}
 
 	nonceBytes := make([]byte, d.aesGCM.NonceSize())
 	if _, err := d.parent.Read(nonceBytes); err != nil {
-		return 0, errgo.Mask(err)
+		return 0, errx.Annotatef(err, "read nonce")
 	}
 
 	cipherText := make([]byte, length)
 	if _, err := d.parent.Read(cipherText); err != nil {
-		return 0, errgo.Mask(err)
+		return 0, errx.Annotatef(err, "read parent")
 	}
 
 	nonce.SetBytes(nonceBytes)
 
 	plainText, err := d.aesGCM.Open(nil, nonceBytes, cipherText, []byte{})
 	if err != nil {
-		return 0, errgo.Mask(err)
+		return 0, errx.Annotatef(err, "aes open")
 	}
 	copy(data, plainText)
 

@@ -16,7 +16,7 @@ package crypt
 
 import "math/big"
 
-// The interface is similar to [[io.Reader]], but additional the `Read` function
+// Reader defines an interface is similar to [[io.Reader]], but additional the `Read` function
 // a nonce parameter of type `*big.Int`.
 type Reader interface {
 	Read(*big.Int, []byte) (int, error)

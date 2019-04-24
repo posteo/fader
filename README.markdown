@@ -1,23 +1,18 @@
+[![Inline docs](http://inch-ci.org/github/posteo/fader.svg?branch=master)](http://inch-ci.org/github/posteo/fader)
+
 # Fader
 
 In-Memory storage that distributes items via UDP multicast.
 
-Documentation is available at [godoc.org](http://godoc.org/github.com/posteo/fader)
-
 ## Interface
 
 ```go
-type Item interface {
-    Key() string
-    Time() time.Time
-}
-
 type Fader interface {
-    Store(Item) error
-    Earliest() Item
-    Select(string) []Item
-    Detect(string) Item
-    Size() int
+  Put([]byte, time.Time, []byte) error
+	Get([]byte) (time.Time, []byte)
+	Earliest() ([]byte, time.Time, []byte)
+	Select([]byte) [][]byte
+	Size() int
 }
 ```
 
@@ -33,7 +28,7 @@ constructor function takes a `time.Duration` that specifies the period after whi
 memoryFader := fader.NewMemory(1*time.Second)
 defer memoryFader.Close()
 
-memoryFader.Store(item)
+memoryFader.Put([]byte("key"), time.Now(), []byte("value"))
 memoryFader.Size() // => 1
 
 time.Sleep(2*time.Second)
@@ -47,13 +42,13 @@ parent instance. Additionally, every `Store` operation is converted into an UDP 
 given multicast group. The packet is encrypted using the given key.
 
 ```go
-multicastFaderOne := fader.NewMulticast(memoryFaderOne, "224.0.0.1:1888", fader.DefaultKey)
+multicastFaderOne := fader.NewMulticast(memoryFaderOne, "224.0.0.1:1888", key)
 defer multicastFaderOne.Close()
 
-multicastFaderTwo := fader.NewMulticast(memoryFaderTwo, "224.0.0.1:1888", fader.DefaultKey)
+multicastFaderTwo := fader.NewMulticast(memoryFaderTwo, "224.0.0.1:1888", key)
 defer multicastFaderTwo.Close()
 
-multicastFaderOne.Store(item)
+multicastFaderOne.Put([]byte("key"), time.Now(), []byte("value"))
 multicastFaderOne.Size() // => 1
 
 time.Sleep(10*time.Millisecond)

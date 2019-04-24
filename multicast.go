@@ -15,33 +15,37 @@
 package fader
 
 import (
-	"encoding/gob"
 	"log"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/simia-tech/errx"
 
 	"github.com/posteo/fader/crypt"
 )
 
+// Multicast implements a multicast faader.
 type Multicast struct {
 	parent              Fader
 	address             string
 	key                 []byte
 	id                  []byte
-	itemReceivedHandler func(Item) bool
+	itemReceivedHandler ReceivedHandler
 	incomingConnection  *net.UDPConn
 	outgoingConnection  *net.UDPConn
 	transmitter         *multicastTransmitter
 }
+
+// ReceivedHandler defines a handler for received items.
+type ReceivedHandler func([]byte, time.Time, []byte) bool
 
 // NewMulticast creates a Fader instance that delegates all calls to a parent Fader instance.
 // Additional to that, all store-operations are published to a Multicast group
 // which is specified by the given address. All packets will encrypted with
 // AES-GCM using the given key. The length of the key's byte-slice, can be 16, 24
 // or 32 and will define if AES-128, AES-192 or AES-256 is used.
-// For testing purposes, a 10-byte long id can be set. If no id is nil, a random
+// A 10-byte long id can be set to avoid collisions. If no id is nil, a random
 // id will be generated.
 // The argument can take a function that is called every time an item is received.
 // If the function is nil or returns true, the received item will be stored in
@@ -51,7 +55,7 @@ func NewMulticast(
 	address string,
 	key []byte,
 	id []byte,
-	itemReceivedHandler func(Item) bool,
+	itemReceivedHandler ReceivedHandler,
 ) (*Multicast, error) {
 	m := &Multicast{
 		parent:              parent,
@@ -97,6 +101,36 @@ func NewMulticast(
 	return m, nil
 }
 
+// Put places an item with the provided key, time and value in the fader.
+func (m *Multicast) Put(key []byte, time time.Time, value []byte) error {
+	if err := m.send(key, time, value); err != nil {
+		return errx.Annotatef(err, "send item")
+	}
+	return m.parent.Put(key, time, value)
+}
+
+// Get returns time and value for the provided key. If no such key exists, a value
+// of nil is returned.
+func (m *Multicast) Get(key []byte) (time.Time, []byte) {
+	return m.parent.Get(key)
+}
+
+// Earliest returns key, time and value of the earliest item in the fader.
+func (m *Multicast) Earliest() ([]byte, time.Time, []byte) {
+	return m.parent.Earliest()
+}
+
+// Select returns all values with the provided key.
+func (m *Multicast) Select(key []byte) [][]byte {
+	return m.parent.Select(key)
+}
+
+// Size returns the number of items in the fader.
+func (m *Multicast) Size() int {
+	return m.parent.Size()
+}
+
+// Close tears down the fader.
 func (m *Multicast) Close() error {
 	if err := m.incomingConnection.Close(); err != nil {
 		return errx.Annotatef(err, "close incoming connection")
@@ -107,34 +141,16 @@ func (m *Multicast) Close() error {
 	return nil
 }
 
-func (m *Multicast) Store(item Item) error {
-	if err := m.send(item); err != nil {
-		return errx.Annotatef(err, "send item")
+func (m *Multicast) send(key []byte, time time.Time, value []byte) error {
+	mp := multicastPacket{key, time, value}
+
+	packet, err := mp.MarshalBinary()
+	if err != nil {
+		return errx.Annotatef(err, "marshal packet")
 	}
-	return m.parent.Store(item)
-}
 
-func (m *Multicast) Earliest() Item {
-	return m.parent.Earliest()
-}
-
-func (m *Multicast) Select(key string) []Item {
-	return m.parent.Select(key)
-}
-
-func (m *Multicast) Detect(key string) Item {
-	return m.parent.Detect(key)
-}
-
-func (m *Multicast) Size() int {
-	return m.parent.Size()
-}
-
-func (m *Multicast) send(item Item) error {
-	encoder := gob.NewEncoder(m.transmitter)
-
-	if err := encoder.Encode(&item); err != nil {
-		return errx.Annotatef(err, "encode item")
+	if _, err := m.transmitter.Write(packet); err != nil {
+		return errx.Annotatef(err, "write packet")
 	}
 
 	if err := m.transmitter.Flush(); err != nil {
@@ -145,23 +161,30 @@ func (m *Multicast) send(item Item) error {
 }
 
 func (m *Multicast) receiveLoop() {
-	var item Item
+	buffer := [2048]byte{}
+	mp := &multicastPacket{}
 	for {
-		decoder := gob.NewDecoder(m.transmitter)
-		if err := decoder.Decode(&item); err != nil {
+		n, err := m.transmitter.Read(buffer[:])
+		if err != nil {
 			if strings.Contains(err.Error(), "use of closed network connection") {
 				return
 			}
-			log.Printf("error during message decoding: %v", err)
+			log.Printf("read error: %v", err)
+			continue
+		}
+		packet := buffer[:n]
+
+		if err := mp.UnmarshalBinary(packet); err != nil {
+			log.Printf("unmarshal packet error: %v", err)
 			continue
 		}
 
-		if m.itemReceivedHandler != nil && !m.itemReceivedHandler(item) {
+		if m.itemReceivedHandler != nil && !m.itemReceivedHandler(mp.key, mp.time, mp.value) {
 			continue
 		}
 
-		if err := m.parent.Store(item); err != nil {
-			log.Printf("error during message storing: %v", err)
+		if err := m.parent.Put(mp.key, mp.time, mp.value); err != nil {
+			log.Printf("put into parent fader: %v", err)
 			return
 		}
 	}

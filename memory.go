@@ -15,6 +15,7 @@
 package fader
 
 import (
+	"bytes"
 	"container/heap"
 	"time"
 )
@@ -48,50 +49,55 @@ func NewMemory(expiresIn time.Duration) *Memory {
 	return m
 }
 
-func (m *Memory) Close() error {
-	m.closed <- true
-	return nil
-}
-
-func (m *Memory) Store(item Item) error {
-	heap.Push(m.items, item)
+func (m *Memory) Put(key []byte, t time.Time, value []byte) error {
+	heap.Push(m.items, &item{
+		key:   key,
+		time:  t,
+		value: value,
+	})
 	m.itemStored <- true
 	return nil
 }
 
-func (m *Memory) Earliest() Item {
+func (m *Memory) Get(key []byte) (time.Time, []byte) {
+	for _, item := range *m.items {
+		if bytes.Equal(item.key, key) {
+			return item.time, item.value
+		}
+	}
+	return time.Time{}, nil
+}
+
+func (m *Memory) Earliest() ([]byte, time.Time, []byte) {
 	if m.Size() > 0 {
-		return (*m.items)[0]
+		item := (*m.items)[0]
+		return item.key, item.time, item.value
 	}
-	return nil
+	return nil, time.Time{}, nil
 }
 
-func (m *Memory) Select(key string) []Item {
-	var result []Item
+func (m *Memory) Select(key []byte) [][]byte {
+	var values [][]byte
 	for _, item := range *m.items {
-		if item.Key() == key {
-			result = append(result, item)
+		if bytes.Equal(item.key, key) {
+			values = append(values, item.value)
 		}
 	}
-	return result
-}
-
-func (m *Memory) Detect(key string) Item {
-	for _, item := range *m.items {
-		if item.Key() == key {
-			return item
-		}
-	}
-	return nil
+	return values
 }
 
 func (m *Memory) Size() int {
 	return m.items.Len()
 }
 
-func (m *Memory) removeEarliest() Item {
+func (m *Memory) Close() error {
+	m.closed <- true
+	return nil
+}
+
+func (m *Memory) removeEarliest() *item {
 	if m.Size() > 0 {
-		return heap.Pop(m.items).(Item)
+		return heap.Pop(m.items).(*item)
 	}
 	return nil
 }
@@ -126,8 +132,8 @@ expiryLoop:
 func (m *Memory) findNextDurationTillNextExpiry() time.Duration {
 	result := veryLongDuration
 
-	for item := m.Earliest(); item != nil; item = m.Earliest() {
-		duration := item.Time().Sub(time.Now().Add(-m.expiresIn))
+	for k, t, _ := m.Earliest(); k != nil; k, t, _ = m.Earliest() {
+		duration := t.Sub(time.Now().Add(-m.expiresIn))
 		if duration > 0 {
 			result = duration
 			break

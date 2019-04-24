@@ -27,11 +27,9 @@ import (
 )
 
 func TestDecryption(t *testing.T) {
-	e := setUp(t)
-
-	input, _ := hex.DecodeString("00180000000000000000000000002e3b1966d4bb71503ec7942a5f4e352735219d268cbdcda0")
+	input, _ := hex.DecodeString("001800000000000000000000000048d484579c9da1845613bcb0b13154268384ffba962cd4d7")
 	inputBuffer := bytes.NewBuffer(input)
-	decrypter, err := crypt.NewDecrypter(inputBuffer, e.key)
+	decrypter, err := crypt.NewDecrypter(inputBuffer, key)
 	require.NoError(t, err)
 
 	nonce := big.NewInt(0)
@@ -43,11 +41,9 @@ func TestDecryption(t *testing.T) {
 }
 
 func TestCorrectNonceReading(t *testing.T) {
-	e := setUp(t)
-
-	input, _ := hex.DecodeString("001800000000000000000021e88e84d211ce6c805f66aa2924c8a4886e81e0d3a287f2dab83a")
+	input, _ := hex.DecodeString("001800000000000000000021e88e57ca9ec99d535f2c5915a084191e59c343125c26142b7fff")
 	inputReader := bytes.NewReader(input)
-	decrypter, err := crypt.NewDecrypter(inputReader, e.key)
+	decrypter, err := crypt.NewDecrypter(inputReader, key)
 	require.NoError(t, err)
 
 	nonce := big.NewInt(0)

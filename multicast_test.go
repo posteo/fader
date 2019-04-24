@@ -18,90 +18,107 @@ import (
 	"testing"
 	"time"
 
-	"github.com/posteo/fader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/posteo/fader"
 )
 
+var (
+	multicastFaderIDOne = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	multicastFaderIDTwo = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+	multicastKey        = []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+)
+
+func setUpFader(tb testing.TB, id []byte) *fader.Multicast {
+	fader, err := fader.NewMulticast(fader.NewMemory(50*time.Millisecond), "224.0.0.1:2000", multicastKey, id, nil)
+	require.NoError(tb, err)
+	return fader
+}
+
 func TestMulticastTransferBetweenTwoFaders(t *testing.T) {
-	e := setUpTestEnvironment(t)
-	defer e.tearDown()
+	faderOne := setUpFader(t, multicastFaderIDOne)
+	faderTwo := setUpFader(t, multicastFaderIDTwo)
 
 	now := time.Now()
-	require.NoError(t, e.multicastFaderOne.Store(&item{KeyField: "test", TimeField: now}))
+	require.NoError(t, faderOne.Put([]byte("test"), now, []byte("value")))
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, 1, e.multicastFaderOne.Size())
-	assert.Equal(t, 1, e.multicastFaderTwo.Size())
+	assert.Equal(t, 1, faderOne.Size())
+	assert.Equal(t, 1, faderTwo.Size())
 
-	itemOne := e.multicastFaderOne.Earliest()
-	assert.Equal(t, "test", itemOne.Key())
-	assert.Equal(t, now, itemOne.Time())
+	key, time, value := faderOne.Earliest()
+	assert.Equal(t, "test", string(key))
+	assert.Equal(t, now.Unix(), time.Unix())
+	assert.Equal(t, "value", string(value))
 
-	itemTwo := e.multicastFaderTwo.Earliest()
-	assert.Equal(t, "test", itemTwo.Key())
-	assert.Equal(t, now.Unix(), itemTwo.Time().Unix())
+	key, time, value = faderTwo.Earliest()
+	assert.Equal(t, "test", string(key))
+	assert.Equal(t, now.Unix(), time.Unix())
+	assert.Equal(t, "value", string(value))
 }
 
 func TestMulticastTransferOfMultipleStores(t *testing.T) {
-	e := setUpTestEnvironment(t)
-	defer e.tearDown()
+	faderOne := setUpFader(t, multicastFaderIDOne)
+	faderTwo := setUpFader(t, multicastFaderIDTwo)
 
 	now := time.Now()
-	e.multicastFaderOne.Store(&item{KeyField: "one", TimeField: now})
-	e.multicastFaderOne.Store(&item{KeyField: "two", TimeField: now})
+	require.NoError(t, faderOne.Put([]byte("one"), now, []byte("value one")))
+	require.NoError(t, faderOne.Put([]byte("two"), now, []byte("value two")))
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, 2, e.multicastFaderOne.Size())
-	assert.Equal(t, 2, e.multicastFaderTwo.Size())
+	assert.Equal(t, 2, faderOne.Size())
+	assert.Equal(t, 2, faderTwo.Size())
 
-	itemOne := e.multicastFaderOne.Earliest()
-	assert.Equal(t, "one", itemOne.Key())
-	assert.Equal(t, now, itemOne.Time())
+	key, time, value := faderOne.Earliest()
+	assert.Equal(t, "one", string(key))
+	assert.Equal(t, now.Unix(), time.Unix())
+	assert.Equal(t, "value one", string(value))
 
-	itemTwo := e.multicastFaderTwo.Earliest()
-	assert.Equal(t, "one", itemTwo.Key())
-	assert.Equal(t, now.Unix(), itemTwo.Time().Unix())
+	key, time, value = faderTwo.Earliest()
+	assert.Equal(t, "one", string(key))
+	assert.Equal(t, now.Unix(), time.Unix())
+	assert.Equal(t, "value one", string(value))
 }
 
 func TestMulticastTransferOfStoreAndExpire(t *testing.T) {
-	e := setUpTestEnvironment(t)
-	defer e.tearDown()
+	faderOne := setUpFader(t, multicastFaderIDOne)
+	faderTwo := setUpFader(t, multicastFaderIDTwo)
 
 	now := time.Now()
-	e.multicastFaderOne.Store(&item{KeyField: "test", TimeField: now})
+	require.NoError(t, faderOne.Put([]byte("test"), now, []byte("value")))
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, 1, e.multicastFaderOne.Size())
-	assert.Equal(t, 1, e.multicastFaderTwo.Size())
+	assert.Equal(t, 1, faderOne.Size())
+	assert.Equal(t, 1, faderTwo.Size())
 	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, 0, e.multicastFaderOne.Size())
-	assert.Equal(t, 0, e.multicastFaderTwo.Size())
+	assert.Equal(t, 0, faderOne.Size())
+	assert.Equal(t, 0, faderTwo.Size())
 }
 
-func TestIfTransmissionFailsOnAReplyAttack(t *testing.T) {
-	e := setUpTestEnvironment(t)
-	defer e.tearDown()
+func TestMulticastIfTransmissionFailsOnAReplyAttack(t *testing.T) {
+	faderOne := setUpFader(t, multicastFaderIDOne)
+	faderTwo := setUpFader(t, multicastFaderIDTwo)
 
-	i := &item{KeyField: "test", TimeField: time.Now()}
-	require.NoError(t, e.multicastFaderOne.Store(i))
+	now := time.Now()
+	require.NoError(t, faderOne.Put([]byte("test"), now, []byte("value")))
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, 1, e.multicastFaderOne.Size())
-	assert.Equal(t, 1, e.multicastFaderTwo.Size())
+	assert.Equal(t, 1, faderOne.Size())
+	assert.Equal(t, 1, faderTwo.Size())
 
 	// forge a reply attack
-	memoryFader := fader.NewMemory(e.expiresIn)
+	memoryFader := fader.NewMemory(50 * time.Millisecond)
 	defer memoryFader.Close()
 
-	multicastFader, err := fader.NewMulticast(memoryFader, "224.0.0.1:2000", e.key, e.multicastFaderIDOne, nil)
+	multicastFader, err := fader.NewMulticast(memoryFader, "224.0.0.1:2000", multicastKey, multicastFaderIDOne, nil)
 	require.NoError(t, err)
 	defer multicastFader.Close()
 
-	require.NoError(t, multicastFader.Store(i))
+	require.NoError(t, multicastFader.Put([]byte("test"), now, []byte("value")))
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, 1, e.multicastFaderOne.Size())
-	assert.Equal(t, 1, e.multicastFaderTwo.Size())
+	assert.Equal(t, 1, faderOne.Size())
+	assert.Equal(t, 1, faderTwo.Size())
 }
