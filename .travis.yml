@@ -2,5 +2,5 @@
 language: go
 
 go:
+  - 1.11.6
   - 1.12.4
-  - latest
