@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/posteo/fader)](https://goreportcard.com/report/posteo/fader) [![Build Status](https://travis-ci.org/posteo/fader.svg?branch=master)](https://travis-ci.org/posteo/fader) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/posteo/fader/blob/master/LICENSE)
+[![Documentation](https://godoc.org/github.com/posteo/fader?status.svg)](http://godoc.org/github.com/posteo/fader) [![Go Report Card](https://goreportcard.com/badge/posteo/fader)](https://goreportcard.com/report/posteo/fader) [![Build Status](https://travis-ci.org/posteo/fader.svg?branch=master)](https://travis-ci.org/posteo/fader) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/posteo/fader/blob/master/LICENSE)
 
 # Fader
 
