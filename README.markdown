@@ -13,6 +13,7 @@ type Fader interface {
     Earliest() ([]byte, time.Time, []byte)
     Select([]byte) [][]byte
     Size() int
+    Close() error
 }
 ```
 
