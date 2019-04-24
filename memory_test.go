@@ -116,3 +116,17 @@ func TestMemoryExpiryOfTwoItemsThatHasBeenAddedInReverseOrder(t *testing.T) {
 	key, _, _ = fader.Earliest()
 	assert.Nil(t, key)
 }
+
+func BenchmarkPut(b *testing.B) {
+	fader := fader.NewMemory(50 * time.Millisecond)
+
+	key, time, value := []byte("key"), time.Now(), []byte("value")
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for index := 0; index < b.N; index++ {
+		if err := fader.Put(key, time, value); err != nil {
+			b.Fatalf("put: %v", err)
+		}
+	}
+}

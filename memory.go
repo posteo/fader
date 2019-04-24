@@ -115,12 +115,16 @@ func (m *Memory) removeEarliest() *item {
 func (m *Memory) expiryLoop() {
 	durationTillNextExpiry := veryLongDuration
 
+	expiryDelay := time.NewTimer(durationTillNextExpiry)
+	defer expiryDelay.Stop()
+
 expiryLoop:
 	for {
+		expiryDelay.Reset(durationTillNextExpiry)
 		select {
 		case <-m.itemStored:
 			durationTillNextExpiry = m.findNextDurationTillNextExpiry()
-		case <-time.After(durationTillNextExpiry):
+		case <-expiryDelay.C:
 			m.removeEarliest()
 			durationTillNextExpiry = m.findNextDurationTillNextExpiry()
 		case <-m.closed:
