@@ -122,6 +122,16 @@ func (m *Memory) Size() int {
 	return l
 }
 
+// Clear removes all items from the fader.
+func (m *Memory) Clear() {
+	m.itemsMutex.Lock()
+	m.items = itemHeap{}
+	heap.Init(&m.items)
+	m.itemsMutex.Unlock()
+
+	m.itemStored <- struct{}{}
+}
+
 // Close tears down the fader.
 func (m *Memory) Close() error {
 	m.closed <- struct{}{}

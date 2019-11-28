@@ -134,6 +134,11 @@ func (m *Multicast) Size() int {
 	return m.parent.Size()
 }
 
+// Clear performs a clear on the parent fader.
+func (m *Multicast) Clear() {
+	m.parent.Clear()
+}
+
 // Close tears down the fader.
 func (m *Multicast) Close() error {
 	if err := m.incomingConnection.Close(); err != nil {
