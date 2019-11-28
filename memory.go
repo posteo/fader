@@ -17,15 +17,18 @@ package fader
 import (
 	"bytes"
 	"container/heap"
+	"log"
+	"sync"
 	"time"
 )
 
 // Memory implements a memory fader.
 type Memory struct {
 	expiresIn  time.Duration
-	items      *itemHeap
-	itemStored chan bool
-	closed     chan bool
+	items      itemHeap
+	itemsMutex sync.RWMutex
+	itemStored chan struct{}
+	closed     chan struct{}
 }
 
 var (
@@ -41,74 +44,98 @@ func init() {
 func NewMemory(expiresIn time.Duration) *Memory {
 	m := &Memory{
 		expiresIn:  expiresIn,
-		items:      &itemHeap{},
-		itemStored: make(chan bool),
-		closed:     make(chan bool),
+		items:      itemHeap{},
+		itemStored: make(chan struct{}),
+		closed:     make(chan struct{}),
 	}
-	heap.Init(m.items)
+
+	m.itemsMutex.Lock()
+	heap.Init(&m.items)
+	m.itemsMutex.Unlock()
+
 	go m.expiryLoop()
+
 	return m
 }
 
 // Put places an item with the provided key, time and value in the fader.
 func (m *Memory) Put(key []byte, t time.Time, value []byte) error {
-	heap.Push(m.items, &item{
+	m.itemsMutex.Lock()
+	heap.Push(&m.items, &item{
 		key:   key,
 		time:  t,
 		value: value,
 	})
-	m.itemStored <- true
+	m.itemsMutex.Unlock()
+
+	m.itemStored <- struct{}{}
+
 	return nil
 }
 
 // Get returns time and value for the provided key. If no such key exists, a value
 // of nil is returned.
 func (m *Memory) Get(key []byte) (time.Time, []byte) {
-	for _, item := range *m.items {
+	m.itemsMutex.RLock()
+	for _, item := range m.items {
 		if bytes.Equal(item.key, key) {
+			m.itemsMutex.RUnlock()
 			return item.time, item.value
 		}
 	}
+	m.itemsMutex.RUnlock()
 	return time.Time{}, nil
 }
 
 // Earliest returns key, time and value of the earliest item in the fader.
 func (m *Memory) Earliest() ([]byte, time.Time, []byte) {
-	if m.Size() > 0 {
-		item := (*m.items)[0]
+	m.itemsMutex.RLock()
+	if m.items.Len() > 0 {
+		item := m.items[0]
+		m.itemsMutex.RUnlock()
 		return item.key, item.time, item.value
 	}
+	m.itemsMutex.RUnlock()
 	return nil, time.Time{}, nil
 }
 
 // Select returns all times and values with the provided key.
 func (m *Memory) Select(key []byte) ([]time.Time, [][]byte) {
+	m.itemsMutex.RLock()
 	times := []time.Time{}
 	values := [][]byte{}
-	for _, item := range *m.items {
+	for _, item := range m.items {
 		if bytes.Equal(item.key, key) {
 			times = append(times, item.time)
 			values = append(values, item.value)
 		}
 	}
+	m.itemsMutex.RUnlock()
 	return times, values
 }
 
 // Size returns the number of items in the fader.
 func (m *Memory) Size() int {
-	return m.items.Len()
+	m.itemsMutex.RLock()
+	l := m.items.Len()
+	m.itemsMutex.RUnlock()
+	return l
 }
 
 // Close tears down the fader.
 func (m *Memory) Close() error {
-	m.closed <- true
+	m.closed <- struct{}{}
 	return nil
 }
 
 func (m *Memory) removeEarliest() *item {
-	if m.Size() > 0 {
-		return heap.Pop(m.items).(*item)
+	m.itemsMutex.Lock()
+	if m.items.Len() > 0 {
+		i := heap.Pop(&m.items).(*item)
+		m.itemsMutex.Unlock()
+		return i
 	}
+	m.itemsMutex.Unlock()
 	return nil
 }
 
@@ -127,6 +154,12 @@ func (m *Memory) expiryLoop() {
 
 	expiryDelay := time.NewTimer(durationTillNextExpiry)
 	defer expiryDelay.Stop()
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("panic: %v", r)
+		}
+	}()
 
 expiryLoop:
 	for {
