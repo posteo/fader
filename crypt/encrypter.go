@@ -18,10 +18,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"math/big"
-
-	"github.com/simia-tech/errx"
 )
 
 type encrypter struct {
@@ -33,12 +32,12 @@ type encrypter struct {
 func NewEncrypter(parent io.Writer, key []byte) (Writer, error) {
 	aes, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, errx.Annotatef(err, "new cipher")
+		return nil, fmt.Errorf("new cipher: %w", err)
 	}
 
 	aesGCM, err := cipher.NewGCM(aes)
 	if err != nil {
-		return nil, errx.Annotatef(err, "new gcm")
+		return nil, fmt.Errorf("new gcm: %w", err)
 	}
 
 	return &encrypter{
@@ -55,15 +54,15 @@ func (e *encrypter) Write(nonce *big.Int, plainText []byte) (int, error) {
 
 	length := uint16(len(cipherText))
 	if err := binary.Write(e.parent, binary.BigEndian, length); err != nil {
-		return 0, errx.Annotatef(err, "write length")
+		return 0, fmt.Errorf("write length: %w", err)
 	}
 
 	if _, err := e.parent.Write(nonceBytes); err != nil {
-		return 0, errx.Annotatef(err, "write nonce")
+		return 0, fmt.Errorf("write nonce: %w", err)
 	}
 
 	if _, err := e.parent.Write(cipherText); err != nil {
-		return 0, errx.Annotatef(err, "write parent")
+		return 0, fmt.Errorf("write parent: %w", err)
 	}
 
 	return len(plainText), nil

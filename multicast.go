@@ -15,12 +15,12 @@
 package fader
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net"
 	"strings"
 	"time"
-
-	"github.com/simia-tech/errx"
 
 	"github.com/posteo/fader/crypt"
 )
@@ -39,6 +39,10 @@ type Multicast struct {
 
 // ReceivedHandler defines a handler for received items.
 type ReceivedHandler func([]byte, time.Time, []byte) bool
+
+// ErrInvalidKeyLength is returns if a key with an invalid length is provided. Valid lengths
+// are 16, 24 and 32.
+var ErrInvalidKeyLength = errors.New("invalid key length")
 
 // NewMulticast creates a Fader instance that delegates all calls to a parent Fader instance.
 // Additional to that, all store-operations are published to a Multicast group
@@ -66,32 +70,32 @@ func NewMulticast(
 	}
 
 	if length := len(m.key); length != 16 && length != 24 && length != 32 {
-		return nil, errx.Errorf("key has length %d, but must have a length of 16, 24 or 32", length)
+		return nil, fmt.Errorf("key length %d: %w", length, ErrInvalidKeyLength)
 	}
 
 	udpAddress, err := net.ResolveUDPAddr("udp", m.address)
 	if err != nil {
-		return nil, errx.Annotatef(err, "resolve udp address [%s]", m.address)
+		return nil, fmt.Errorf("resolve udp address [%s]: %w", m.address, err)
 	}
 
 	m.incomingConnection, err = net.ListenMulticastUDP("udp", nil, udpAddress)
 	if err != nil {
-		return nil, errx.Annotatef(err, "listen Multicast udp")
+		return nil, fmt.Errorf("listen Multicast udp: %w", err)
 	}
 
 	m.outgoingConnection, err = net.DialUDP("udp", nil, udpAddress)
 	if err != nil {
-		return nil, errx.Annotatef(err, "dial udp")
+		return nil, fmt.Errorf("dial udp: %w", err)
 	}
 
 	decrypter, err := crypt.NewDecrypter(m.incomingConnection, m.key)
 	if err != nil {
-		return nil, errx.Annotatef(err, "new decrypter")
+		return nil, fmt.Errorf("new decrypter: %w", err)
 	}
 
 	encrypter, err := crypt.NewEncrypter(m.outgoingConnection, m.key)
 	if err != nil {
-		return nil, errx.Annotatef(err, "new encrypter")
+		return nil, fmt.Errorf("new encrypter: %w", err)
 	}
 
 	m.transmitter = newMulticastTransmitter(encrypter, decrypter, m.id)
@@ -104,7 +108,7 @@ func NewMulticast(
 // Put places an item with the provided key, time and value in the fader.
 func (m *Multicast) Put(key []byte, time time.Time, value []byte) error {
 	if err := m.send(key, time, value); err != nil {
-		return errx.Annotatef(err, "send item")
+		return fmt.Errorf("send item: %w", err)
 	}
 	return m.parent.Put(key, time, value)
 }
@@ -133,10 +137,10 @@ func (m *Multicast) Size() int {
 // Close tears down the fader.
 func (m *Multicast) Close() error {
 	if err := m.incomingConnection.Close(); err != nil {
-		return errx.Annotatef(err, "close incoming connection")
+		return fmt.Errorf("close incoming connection: %w", err)
 	}
 	if err := m.outgoingConnection.Close(); err != nil {
-		return errx.Annotatef(err, "close outgoing connection")
+		return fmt.Errorf("close outgoing connection: %w", err)
 	}
 	return nil
 }
@@ -146,15 +150,15 @@ func (m *Multicast) send(key []byte, time time.Time, value []byte) error {
 
 	packet, err := mp.MarshalBinary()
 	if err != nil {
-		return errx.Annotatef(err, "marshal packet")
+		return fmt.Errorf("marshal packet: %w", err)
 	}
 
 	if _, err := m.transmitter.Write(packet); err != nil {
-		return errx.Annotatef(err, "write packet")
+		return fmt.Errorf("write packet: %w", err)
 	}
 
 	if err := m.transmitter.Flush(); err != nil {
-		return errx.Annotatef(err, "flush")
+		return fmt.Errorf("flush: %w", err)
 	}
 
 	return nil

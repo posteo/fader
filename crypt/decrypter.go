@@ -19,10 +19,9 @@ import (
 	"crypto/cipher"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
-
-	"github.com/simia-tech/errx"
 )
 
 type decrypter struct {
@@ -37,12 +36,12 @@ var ErrInvalidNonce = errors.New("tried to decrypt with a previouly used nonce")
 func NewDecrypter(parent io.Reader, key []byte) (Reader, error) {
 	aes, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, errx.Annotatef(err, "new cipher")
+		return nil, fmt.Errorf("new cipher: %w", err)
 	}
 
 	aesGCM, err := cipher.NewGCM(aes)
 	if err != nil {
-		return nil, errx.Annotatef(err, "new gcm")
+		return nil, fmt.Errorf("new gcm: %w", err)
 	}
 
 	return &decrypter{
@@ -54,24 +53,24 @@ func NewDecrypter(parent io.Reader, key []byte) (Reader, error) {
 func (d *decrypter) Read(nonce *big.Int, data []byte) (int, error) {
 	length := uint16(0)
 	if err := binary.Read(d.parent, binary.BigEndian, &length); err != nil {
-		return 0, errx.Annotatef(err, "read length")
+		return 0, fmt.Errorf("read length: %w", err)
 	}
 
 	nonceBytes := make([]byte, d.aesGCM.NonceSize())
 	if _, err := d.parent.Read(nonceBytes); err != nil {
-		return 0, errx.Annotatef(err, "read nonce")
+		return 0, fmt.Errorf("read nonce: %w", err)
 	}
 
 	cipherText := make([]byte, length)
 	if _, err := d.parent.Read(cipherText); err != nil {
-		return 0, errx.Annotatef(err, "read parent")
+		return 0, fmt.Errorf("read parent: %w", err)
 	}
 
 	nonce.SetBytes(nonceBytes)
 
 	plainText, err := d.aesGCM.Open(nil, nonceBytes, cipherText, []byte{})
 	if err != nil {
-		return 0, errx.Annotatef(err, "aes open")
+		return 0, fmt.Errorf("aes open: %w", err)
 	}
 	copy(data, plainText)
 

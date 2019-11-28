@@ -17,10 +17,9 @@ package fader
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"log"
 	"math/big"
-
-	"github.com/simia-tech/errx"
 
 	"github.com/posteo/fader/crypt"
 )
@@ -66,7 +65,7 @@ func (t *multicastTransmitter) Flush() error {
 	buffer := append(t.id, t.writeBuffer.Bytes()...)
 	if _, err := t.writer.Write(t.nonce, buffer); err != nil {
 		t.increaseNonce()
-		return errx.Annotatef(err, "write")
+		return fmt.Errorf("write: %w", err)
 	}
 	t.writeBuffer.Reset()
 
@@ -82,7 +81,7 @@ func (t *multicastTransmitter) Read(payload []byte) (int, error) {
 	for {
 		n, err := t.reader.Read(nonce, buffer)
 		if err != nil {
-			return 0, errx.Annotatef(err, "read")
+			return 0, fmt.Errorf("read: %w", err)
 		}
 		packet = buffer[:n]
 
